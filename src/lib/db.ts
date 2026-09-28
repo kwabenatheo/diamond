@@ -161,56 +161,36 @@ export async function getProducts(options?: {
   maxPrice?: number;
   onlyActive?: boolean;
 }): Promise<Product[]> {
-  // 1. Try Supabase cloud query
-  try {
-    const { data, error } = await supabase.from('products').select('*');
-    if (!error && data && data.length > 0) {
-      let list: Product[] = data.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        category: row.category,
-        price: Number(row.price),
-        stockQuantity: row.stock_quantity,
-        volume: row.volume,
-        alcoholPercentage: row.alcohol_percentage ? Number(row.alcohol_percentage) : undefined,
-        originCountry: row.origin_country,
-        imageUrl: row.image_url,
-        description: row.description || '',
-        isFeatured: row.is_featured,
-        isActive: row.is_active,
-        createdAt: row.created_at,
-      }));
-
-      if (options?.onlyActive !== false) {
-        list = list.filter((p) => p.isActive);
-      }
-      if (options?.category && options.category !== 'all') {
-        list = list.filter((p) => p.category.toLowerCase() === options.category?.toLowerCase());
-      }
-      if (options?.search) {
-        const q = options.search.toLowerCase();
-        list = list.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q) ||
-            p.category.toLowerCase().includes(q)
-        );
-      }
-      if (options?.minPrice !== undefined) {
-        list = list.filter((p) => p.price >= options.minPrice!);
-      }
-      if (options?.maxPrice !== undefined) {
-        list = list.filter((p) => p.price <= options.maxPrice!);
-      }
-      return list;
-    }
-  } catch (e) {
-    // Fall through to local persistent DB
-  }
-
-  // 2. Fallback to local DB
   const db = readDb();
   let list = db.products;
+
+  if (list.length === 0) {
+    try {
+      const { data, error } = await supabase.from('products').select('*');
+      if (!error && data && data.length > 0) {
+        list = data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          category: row.category,
+          price: Number(row.price),
+          stockQuantity: row.stock_quantity,
+          volume: row.volume,
+          alcoholPercentage: row.alcohol_percentage ? Number(row.alcohol_percentage) : undefined,
+          originCountry: row.origin_country,
+          imageUrl: row.image_url,
+          description: row.description || '',
+          isFeatured: row.is_featured,
+          isActive: row.is_active,
+          createdAt: row.created_at,
+        }));
+
+        db.products = list;
+        writeDb(db);
+      }
+    } catch (e) {
+      // Fall through to the local dataset
+    }
+  }
 
   if (options?.onlyActive !== false) {
     list = list.filter((p) => p.isActive);
@@ -242,10 +222,16 @@ export async function getProducts(options?: {
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
+  const db = readDb();
+  const localProduct = db.products.find((p) => p.id === id);
+  if (localProduct) {
+    return localProduct;
+  }
+
   try {
     const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
     if (!error && data) {
-      return {
+      const mappedProduct = {
         id: data.id,
         name: data.name,
         category: data.category,
@@ -260,11 +246,14 @@ export async function getProductById(id: string): Promise<Product | null> {
         isActive: data.is_active,
         createdAt: data.created_at,
       };
+
+      db.products.push(mappedProduct);
+      writeDb(db);
+      return mappedProduct;
     }
   } catch (e) {}
 
-  const db = readDb();
-  return db.products.find((p) => p.id === id) || null;
+  return null;
 }
 
 export async function createProduct(productData: Omit<Product, 'id' | 'createdAt'>): Promise<Product> {
