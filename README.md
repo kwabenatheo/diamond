@@ -27,6 +27,16 @@ To learn more about Next.js, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
+## Product image storage
+
+Product uploads are stored in Supabase Storage rather than the app's filesystem:
+
+1. In the Supabase Dashboard, create a **public** Storage bucket named `product-images` (or set `SUPABASE_STORAGE_BUCKET` to your chosen bucket name). Set its file size limit to 5 MB and, if desired, allow only JPEG, PNG, WEBP, GIF, and AVIF.
+2. Set `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` for local development and in the hosting provider's server-side environment variables for deployment. `SUPABASE_SERVICE_ROLE_KEY` must never use a `NEXT_PUBLIC_` prefix or be exposed to browser code.
+3. Restart the development server or redeploy after setting the variables.
+
+The upload endpoint checks that the requester is staff or owner, then uploads to the bucket using the server-only service role key. The resulting public URL is saved as the product image URL.
+
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import { getAuthenticatedUser } from '@/lib/auth';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file format. Please upload a JPEG, PNG, WEBP, or GIF image.' },
+        { error: 'Invalid file format. Please upload a JPEG, PNG, WEBP, GIF, or AVIF image.' },
         { status: 400 }
       );
     }
@@ -31,30 +33,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File size exceeds maximum limit of 5MB.' }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json(
+        { error: 'Image storage is not configured. Set the Supabase URL and server-side service role key.' },
+        { status: 500 }
+      );
     }
 
-    // Generate safe clean filename
-    const extension = path.extname(file.name) || '.jpg';
-    const cleanBaseName = file.name
-      .replace(extension, '')
-      .replace(/[^a-zA-Z0-9_-]/g, '_')
-      .toLowerCase();
-    const filename = `drink_${Date.now()}_${cleanBaseName}${extension}`;
-    const filePath = path.join(uploadsDir, filename);
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'product-images';
+    const extensions: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+      'image/avif': 'avif',
+    };
+    const filename = `${randomUUID()}.${extensions[file.type]}`;
+    const objectPath = `products/${filename}`;
 
-    fs.writeFileSync(filePath, buffer);
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(bucket)
+      .upload(objectPath, Buffer.from(await file.arrayBuffer()), {
+        contentType: file.type,
+        cacheControl: '31536000',
+        upsert: false,
+      });
 
-    const publicUrl = `/uploads/${filename}`;
+    if (uploadError) {
+      console.error('Supabase Storage upload error:', uploadError.message);
+      return NextResponse.json(
+        { error: `Could not upload image to the '${bucket}' bucket. Check that the bucket exists and is public.` },
+        { status: 502 }
+      );
+    }
+
+    const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(objectPath);
 
     return NextResponse.json({
       success: true,
-      url: publicUrl,
+      url: data.publicUrl,
       filename,
     });
   } catch (error: any) {

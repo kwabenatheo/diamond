@@ -491,7 +491,7 @@ export default function StaffInventoryPage() {
               <div className="space-y-2 bg-[#111a2e] p-3.5 rounded-xl border border-slate-700">
                 <label className="text-slate-200 font-bold block flex items-center justify-between">
                   <span>Product Image Photo</span>
-                  <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WEBP (Max 5MB)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WEBP, GIF, AVIF (Max 5MB)</span>
                 </label>
 
                 <div className="flex items-center gap-3">
