@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     if (uploadError) {
       console.error('Supabase Storage upload error:', uploadError.message);
       return NextResponse.json(
-        { error: `Could not upload image to the '${bucket}' bucket. Check that the bucket exists and is public.` },
+        { error: `Supabase Storage upload failed (${bucket}): ${uploadError.message}` },
         { status: 502 }
       );
     }
