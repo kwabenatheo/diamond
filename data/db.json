@@ -104,21 +104,6 @@
       "createdAt": "2026-09-28T00:57:23.771Z"
     },
     {
-      "id": "prod_hennessy_vs",
-      "name": "Hennessy Very Special (VS) Cognac",
-      "category": "whisky-spirits",
-      "price": 680,
-      "stockQuantity": 20,
-      "volume": "750ml",
-      "alcoholPercentage": 40,
-      "originCountry": "France",
-      "imageUrl": "https://images.unsplash.com/photo-1582819509241-913417cba4b4?auto=format&fit=crop&w=800&q=80",
-      "description": "A timeless benchmark in cognac. Vibrant and full-bodied with notes of toasted oak, fresh grapes, and roasted almonds.",
-      "isFeatured": true,
-      "isActive": true,
-      "createdAt": "2026-09-28T00:57:23.771Z"
-    },
-    {
       "id": "prod_tanqueray",
       "name": "Tanqueray London Dry Gin",
       "category": "whisky-spirits",
@@ -224,36 +209,6 @@
       "createdAt": "2026-09-28T00:57:23.772Z"
     },
     {
-      "id": "prod_club_bottle",
-      "name": "Club Premium Lager Beer (Single Bottle)",
-      "category": "beers-ciders",
-      "price": 18,
-      "stockQuantity": 150,
-      "volume": "625ml",
-      "alcoholPercentage": 5,
-      "originCountry": "Ghana",
-      "imageUrl": "https://images.unsplash.com/photo-1608270199042-45e0f73fce81?auto=format&fit=crop&w=800&q=80",
-      "description": "Ghana’s pride and joy! Brewed with finest hops and golden malted barley. Truly refreshing taste, perfectly suited for the Accra climate.",
-      "isFeatured": true,
-      "isActive": true,
-      "createdAt": "2026-09-28T00:57:23.772Z"
-    },
-    {
-      "id": "prod_club_crate",
-      "name": "Club Premium Lager (Full Crate — 12 Large Bottles)",
-      "category": "beers-ciders",
-      "price": 210,
-      "stockQuantity": 40,
-      "volume": "12 x 625ml",
-      "alcoholPercentage": 5,
-      "originCountry": "Ghana",
-      "imageUrl": "https://images.unsplash.com/photo-1538488881523-298a007c0330?auto=format&fit=crop&w=800&q=80",
-      "description": "Special wholesale pack for parties, events, and family gatherings. Includes 12 large chilled bottles of Club Beer.",
-      "isFeatured": false,
-      "isActive": true,
-      "createdAt": "2026-09-28T00:57:23.772Z"
-    },
-    {
       "id": "prod_guinness_extra",
       "name": "Guinness Foreign Extra Stout",
       "category": "beers-ciders",
@@ -265,21 +220,6 @@
       "imageUrl": "https://images.unsplash.com/photo-1584225064785-c62a8b43d148?auto=format&fit=crop&w=800&q=80",
       "description": "Rich, dark, and deeply rewarding with a bitter-sweet character and intense roasted coffee and chocolate notes.",
       "isFeatured": true,
-      "isActive": true,
-      "createdAt": "2026-09-28T00:57:23.772Z"
-    },
-    {
-      "id": "prod_heineken",
-      "name": "Heineken Premium Lager Can (Pack of 6)",
-      "category": "beers-ciders",
-      "price": 85,
-      "stockQuantity": 65,
-      "volume": "6 x 330ml",
-      "alcoholPercentage": 5,
-      "originCountry": "Netherlands",
-      "imageUrl": "https://images.unsplash.com/photo-1618886614638-80e3c15cd819?auto=format&fit=crop&w=800&q=80",
-      "description": "Crisp, clean taste with a subtly bitter finish. Six 330ml cans convenient for chilling and on-the-go enjoyment.",
-      "isFeatured": false,
       "isActive": true,
       "createdAt": "2026-09-28T00:57:23.772Z"
     },
