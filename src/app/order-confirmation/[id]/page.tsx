@@ -8,13 +8,13 @@ import {
   Clock,
   Truck,
   MapPin,
-  ShoppingBag,
   ArrowRight,
-  ShieldCheck,
   PackageCheck,
   AlertCircle,
+  Printer,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 
 export default function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,13 +29,15 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const res = await fetch(`/api/orders/${id}`);
+        const res = await fetch(`/api/orders/${id}`, { cache: 'no-store' });
         if (!res.ok) {
           throw new Error('Order not found');
         }
         const data = await res.json();
         setOrder(data.order);
-        if (data.order?.paymentStatus === 'paid') clearCart();
+        if (data.order?.paymentStatus === 'paid') {
+          clearCart(data.order.customerId);
+        }
       } catch (err: any) {
         setError(err.message || 'Error fetching order details');
       } finally {
@@ -153,6 +155,18 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
           </span>
         </div>
       </div>
+
+      {order.paymentStatus === 'paid' && (
+        <div className="flex justify-end no-print">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#d4af37] px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-[#c5a028] transition"
+          >
+            <Printer className="h-4 w-4" /> Print / Save Receipt
+          </button>
+        </div>
+      )}
 
       {/* Real-time Order Status Tracker */}
       <div className="bg-[#0d1527] border border-slate-800 rounded-2xl p-6 space-y-6">
@@ -286,8 +300,67 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
+      {order.paymentStatus === 'paid' && (
+        <section id="receipt-print" className="rounded-2xl border border-slate-300 bg-white p-8 text-slate-900 shadow-lg">
+          <header className="flex items-center gap-4 border-b border-slate-200 pb-5">
+            <Image src="/diamond-jay-logo.svg" alt="Diamond Jay Enterprise" width={88} height={88} className="h-20 w-20 object-contain" />
+            <div>
+              <h2 className="text-xl font-black tracking-wide">DIAMOND JAY ENTERPRISE</h2>
+              <p className="text-sm text-slate-600">Drinks & Liquor Boutique · Accra, Ghana</p>
+              <p className="text-sm text-slate-600">410 New Road, Accra · +233 248 565 916</p>
+            </div>
+            <div className="ml-auto text-right">
+              <h3 className="text-lg font-bold uppercase tracking-widest">Receipt</h3>
+              <p className="text-sm">Paid</p>
+            </div>
+          </header>
+
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 border-b border-slate-200 py-5 text-sm">
+            <p><strong>Order:</strong> {order.orderNumber}</p>
+            <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
+            <p><strong>Customer:</strong> {order.customerName}</p>
+            <p><strong>Phone:</strong> {order.customerPhone}</p>
+            <p><strong>Email:</strong> {order.customerEmail}</p>
+            <p><strong>Payment:</strong> {order.paymentMethod?.replace('paystack_', '').toUpperCase() || 'PAYSTACK'}</p>
+            {order.paystackReference && <p className="col-span-2 break-all"><strong>Payment reference:</strong> {order.paystackReference}</p>}
+            <p><strong>Fulfillment:</strong> {order.fulfillmentType === 'pickup' ? 'Store pickup' : 'Delivery'}</p>
+            {order.fulfillmentType === 'delivery' && order.deliveryDetails?.address && (
+              <p className="col-span-2"><strong>Delivery address:</strong> {order.deliveryDetails.address}</p>
+            )}
+          </div>
+
+          <table className="my-5 w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-300 text-left">
+                <th className="py-2">Item</th>
+                <th className="py-2 text-center">Qty</th>
+                <th className="py-2 text-right">Unit price</th>
+                <th className="py-2 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items.map((item) => (
+                <tr key={item.id} className="border-b border-slate-100">
+                  <td className="py-2">{item.productName} <span className="text-slate-500">({item.volume})</span></td>
+                  <td className="py-2 text-center">{item.quantity}</td>
+                  <td className="py-2 text-right">GHS {item.unitPrice.toFixed(2)}</td>
+                  <td className="py-2 text-right">GHS {item.totalPrice.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="ml-auto max-w-xs space-y-2 text-sm">
+            <div className="flex justify-between"><span>Subtotal</span><span>GHS {order.subtotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>Delivery / fulfillment</span><span>GHS {order.deliveryFee.toFixed(2)}</span></div>
+            <div className="flex justify-between border-t border-slate-300 pt-2 text-base font-black"><span>Total paid</span><span>GHS {order.totalAmount.toFixed(2)}</span></div>
+          </div>
+          <p className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">Thank you for shopping with Diamond Jay Enterprise.</p>
+        </section>
+      )}
+
       {/* Bottom Actions */}
-      <div className="flex flex-wrap gap-4 justify-between items-center pt-2">
+      <div className="no-print flex flex-wrap gap-4 justify-between items-center pt-2">
         <Link
           href="/catalog"
           className="text-xs font-bold text-[#d4af37] hover:underline flex items-center gap-1"

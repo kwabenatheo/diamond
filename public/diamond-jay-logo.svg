@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-labelledby="title desc">
+  <title id="title">Diamond Jay Enterprise emblem</title>
+  <desc id="desc">A blue diamond with a gold Jay monogram framed by a gold ornamental crest.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0a6"/><stop offset=".48" stop-color="#d4af37"/><stop offset="1" stop-color="#9c6e15"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3c8ac5"/><stop offset=".48" stop-color="#123e78"/><stop offset="1" stop-color="#071b3e"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M160 17c-18 27-17 47 0 62 17-15 18-35 0-62Z"/>
+    <path d="M160 29c-7 13-7 25 0 34 7-9 7-21 0-34Z"/>
+    <path d="M142 56c-28-10-46-4-54 17 21 9 40 3 54-17ZM178 56c28-10 46-4 54 17-21 9-40 3-54-17Z"/>
+    <path d="M78 77C44 64 26 82 41 104c14 20 40 17 56-3M242 77c34-13 52 5 37 27-14 20-40 17-56-3Z"/>
+    <path d="M64 107c-35 3-43 29-18 42 20 10 38-2 42-22M256 107c35 3 43 29 18 42-20 10-38-2-42-22Z"/>
+    <path d="M58 157c-30 14-27 42 0 45 21 2 33-17 25-36M262 157c30 14 27 42 0 45-21 2-33-17-25-36Z"/>
+    <path d="M74 208c-23 24-10 48 16 41 19-5 23-27 8-42M246 208c23 24 10 48-16 41-19-5-23-27-8-42Z"/>
+    <path d="M103 251c-10 27 11 44 31 27 15-13 9-32-8-39M217 251c10 27-11 44-31 27-15-13-9-32 8-39Z"/>
+    <path d="M145 278c-7 19 5 31 15 39 10-8 22-20 15-39M160 287v26"/>
+    <path d="M47 97c19 3 28 13 31 27M273 97c-19 3-28 13-31 27M53 176c16-2 25 5 29 18M267 176c-16-2-25 5-29 18M93 235c14-9 25-8 34 2M227 235c-14-9-25-8-34 2"/>
+  </g>
+  <path d="M160 75 260 130 160 245 60 130Z" fill="url(#blue)" stroke="url(#gold)" stroke-width="8" stroke-linejoin="round"/>
+  <path d="m160 75 0 170M60 130h200M60 130l100 115M260 130 160 245" fill="none" stroke="#e9cd78" stroke-opacity=".82" stroke-width="3"/>
+  <path d="M160 88 236 130 160 218 84 130Z" fill="none" stroke="#9fc5e4" stroke-opacity=".85" stroke-width="2"/>
+  <text x="160" y="181" text-anchor="middle" fill="#f6dfa0" stroke="#15294b" stroke-width="1.5" paint-order="stroke" font-family="Georgia,serif" font-size="82" font-weight="bold" font-style="italic">J</text>
+</svg>

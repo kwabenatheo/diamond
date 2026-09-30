@@ -36,7 +36,7 @@ export default function CartPage() {
           <p className="text-xs text-slate-400 mt-1">Review your drinks before proceeding to checkout</p>
         </div>
         <button
-          onClick={clearCart}
+          onClick={() => clearCart()}
           className="text-xs text-red-400 hover:text-red-300 transition"
         >
           Clear All Items

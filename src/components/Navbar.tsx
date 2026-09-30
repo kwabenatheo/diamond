@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -64,8 +65,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#d4af37] to-[#aa820a] flex items-center justify-center text-slate-950 font-black shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition">
-            <Wine className="w-6 h-6 text-slate-950" />
+          <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center overflow-hidden shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition">
+            <Image
+              src="/diamond-jay-logo.svg"
+              alt="Diamond Jay Enterprise logo"
+              width={48}
+              height={48}
+              priority
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-black tracking-tight text-white flex items-center gap-1.5">

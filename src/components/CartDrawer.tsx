@@ -143,7 +143,7 @@ export default function CartDrawer() {
               </Link>
 
               <button
-                onClick={clearCart}
+                onClick={() => clearCart()}
                 className="w-full text-center text-[11px] text-slate-500 hover:text-red-400 transition"
               >
                 Clear entire cart

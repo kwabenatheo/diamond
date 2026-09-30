@@ -9,7 +9,7 @@ interface CartContextType {
   addItem: (product: Product, quantity?: number) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
-  clearCart: () => void;
+  clearCart: (userId?: string) => void;
   itemCount: number;
   subtotal: number;
   isCartOpen: boolean;
@@ -23,11 +23,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [hydratedCartKey, setHydratedCartKey] = useState<string | null>(null);
 
   const cartKey = user?.id ? `diamond_jay_cart_${user.id}` : 'diamond_jay_cart_guest';
 
   useEffect(() => {
     setIsMounted(true);
+    setHydratedCartKey(null);
     try {
       const saved = localStorage.getItem(cartKey);
       if (saved) {
@@ -38,18 +40,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Error loading cart:', e);
       setItems([]);
+    } finally {
+      setHydratedCartKey(cartKey);
     }
   }, [cartKey]);
 
   useEffect(() => {
-    if (isMounted) {
+    if (isMounted && hydratedCartKey === cartKey) {
       try {
         localStorage.setItem(cartKey, JSON.stringify(items));
       } catch (e) {
         console.error('Error saving cart:', e);
       }
     }
-  }, [items, isMounted, cartKey]);
+  }, [items, isMounted, hydratedCartKey, cartKey]);
 
   const addItem = (product: Product, quantity = 1) => {
     setItems((prev) => {
@@ -85,9 +89,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
-  const clearCart = useCallback(() => {
+  const clearCart = useCallback((userId?: string) => {
+    try {
+      localStorage.removeItem(cartKey);
+      localStorage.removeItem('diamond_jay_cart_guest');
+      if (userId) localStorage.removeItem(`diamond_jay_cart_${userId}`);
+    } catch (e) {
+      console.error('Error clearing saved cart:', e);
+    }
     setItems([]);
-  }, []);
+  }, [cartKey]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
