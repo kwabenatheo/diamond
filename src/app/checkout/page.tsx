@@ -298,7 +298,7 @@ export default function CheckoutPage() {
               </p>
               <div className="text-[11px] text-slate-400 pt-1 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Pickup hours: Daily 7:00 AM – 9:00 PM (Monday – Sunday)</span>
+                <span>Pickup hours: Daily 7:40 AM – 9:00 PM (Monday – Saturday) and on Sundays ( 11:30 AM- 8:00 PM)</span>
               </div>
             </div>
           )}
