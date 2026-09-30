@@ -77,7 +77,7 @@ export default function HomePage() {
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
               Prestige Drinks & Liquors, Delivered{' '}
-              <span className="gold-gradient-text">Cold Across Accra.</span>
+              <span className="gold-gradient-text"> Across Accra.</span>
             </h1>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
@@ -269,7 +269,7 @@ export default function HomePage() {
               </div>
               <h4 className="text-sm font-bold text-white">Fast Dispatch</h4>
               <p className="text-xs text-slate-400">
-                Cold beers and wines dispatched rapidly to your door in Accra.
+                 Beers and wines dispatched rapidly to your door in Accra.
               </p>
             </div>
 
