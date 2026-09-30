@@ -419,7 +419,7 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
   country: 'Ghana',
   phone: '+233 248 565 916',
   whatsapp: '+233 248 565 916',
-  email: 'orders@diamondjay.com',
+  email: 'diamondjayenterprise24@gmail.com',
   minOrderAge: 18,
   businessHours: [
     { day: 'Monday - Thursday', open: '07:00 AM', close: '09:00 PM' },

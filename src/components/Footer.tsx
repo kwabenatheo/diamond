@@ -32,7 +32,7 @@ export default function Footer() {
             </div>
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-[#d4af37] shrink-0" />
-              <span>orders@diamondjay.com</span>
+              <span>diamondjayenterprise24@gmail.com</span>
             </div>
           </div>
         </div>
@@ -46,15 +46,15 @@ export default function Footer() {
           <ul className="space-y-2 text-slate-300">
             <li className="flex justify-between border-b border-slate-800 pb-1.5">
               <span>Monday – Thursday:</span>
-              <span className="font-semibold text-white">7:00 AM – 9:00 PM</span>
+              <span className="font-semibold text-white">7:40 AM – 9:00 PM</span>
             </li>
             <li className="flex justify-between border-b border-slate-800 pb-1.5">
               <span>Friday – Saturday:</span>
-              <span className="font-semibold text-[#d4af37]">7:00 AM – 9:00 PM</span>
+              <span className="font-semibold text-[#d4af37]">7:40 AM – 9:00 PM</span>
             </li>
             <li className="flex justify-between border-b border-slate-800 pb-1.5">
               <span>Sunday:</span>
-              <span className="font-semibold text-white">7:00 AM – 9:00 PM</span>
+              <span className="font-semibold text-white">11:30 AM – 8:00 PM</span>
             </li>
             <li className="text-[11px] text-amber-400 pt-1">
               * Delivery orders close 45 minutes before store closing time.
