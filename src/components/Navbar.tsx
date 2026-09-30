@@ -62,28 +62,28 @@ export default function Navbar() {
       </div>
 
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center overflow-hidden shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition">
+        <Link href="/" className="flex min-w-0 shrink items-center gap-2 sm:gap-2.5 group">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-white flex items-center justify-center overflow-hidden shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition">
             <Image
               src="/diamond-jay-logo.svg"
               alt="Diamond Jay Enterprise logo"
-              width={48}
-              height={48}
+              width={40}
+              height={40}
               priority
               className="w-full h-full object-contain"
             />
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="whitespace-nowrap text-sm sm:text-lg leading-tight font-black tracking-tight text-white flex items-center gap-1.5">
               DIAMOND JAY
-              <span className="text-[10px] bg-[#d4af37]/20 text-[#d4af37] font-bold px-1.5 py-0.5 rounded uppercase">
+              <span className="hidden sm:inline text-[10px] bg-[#d4af37]/20 text-[#d4af37] font-bold px-1.5 py-0.5 rounded uppercase">
                 Enterprise
               </span>
             </span>
-            <span className="text-[10px] text-slate-400 tracking-wider uppercase font-semibold">
-              Drinks & Liquor Boutique • Accra
+            <span className="truncate whitespace-nowrap text-[8px] sm:text-[10px] text-slate-400 tracking-[0.08em] sm:tracking-wider uppercase font-semibold">
+              <span className="sm:hidden text-[#d4af37]">Enterprise • </span>Drinks & Liquor Boutique • Accra
             </span>
           </div>
         </Link>
@@ -101,7 +101,7 @@ export default function Navbar() {
         </form>
 
         {/* Navigation Links */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <Link
             href="/catalog"
             className="hidden lg:flex items-center gap-1.5 text-sm font-medium text-slate-200 hover:text-[#d4af37] transition px-3 py-1.5 rounded-lg hover:bg-slate-800/50"
@@ -134,7 +134,7 @@ export default function Navbar() {
           {/* Account Link */}
           <Link
             href={user ? (user.role === 'customer' ? '/account' : user.role === 'owner' ? '/owner/analytics' : '/staff/orders') : '/login'}
-            className="flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-white transition px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60"
+            className="flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-white transition px-1.5 sm:px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60"
           >
             <UserIcon className="w-4 h-4 text-[#d4af37]" />
             <span className="hidden sm:inline">
@@ -145,7 +145,7 @@ export default function Navbar() {
           {/* Cart Button */}
           <button
             onClick={() => setIsCartOpen(true)}
-            className="relative flex items-center gap-2 bg-[#d4af37] hover:bg-[#c5a028] text-slate-950 font-bold px-3.5 py-2 rounded-full transition shadow-md shadow-[#d4af37]/20 active:scale-95"
+            className="relative flex items-center gap-2 bg-[#d4af37] hover:bg-[#c5a028] text-slate-950 font-bold px-2.5 sm:px-3.5 py-2 rounded-full transition shadow-md shadow-[#d4af37]/20 active:scale-95"
             aria-label="View Cart"
           >
             <ShoppingBag className="w-4 h-4" />
