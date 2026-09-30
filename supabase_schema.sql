@@ -160,7 +160,7 @@ INSERT INTO public.store_settings (
     'Ghana',
     '+233 248 565 916',
     '+233 248 565 916',
-    'orders@diamondjay.com',
+    'diamondjayenterprise24@gmail.com',
     18,
     '[{"day": "Monday - Thursday", "open": "07:00 AM", "close": "09:00 PM"}, {"day": "Friday - Saturday", "open": "07:00 AM", "close": "09:00 PM"}, {"day": "Sunday", "open": "07:00 AM", "close": "09:00 PM"}]'::jsonb,
     '[{"id": "zone_central", "name": "Accra Central & Surroundings", "areas": ["Osu", "Cantonments", "Labone", "Adabraka", "Ridge", "Airport Residential"], "fee": 25, "estimatedTime": "30 - 45 mins"}, {"id": "zone_suburban_east", "name": "East Legon & Spintex Corridor", "areas": ["East Legon", "Adjiringanor", "Spintex Road", "Tema Comm 1-12", "Sakumono"], "fee": 40, "estimatedTime": "45 - 60 mins"}, {"id": "zone_outer", "name": "Greater Accra Outer Zones", "areas": ["Madina", "Adenta", "Achimota", "Dansoman", "Kasoa Road", "Dome"], "fee": 60, "estimatedTime": "60 - 90 mins"}]'::jsonb,
