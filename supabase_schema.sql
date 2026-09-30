@@ -71,6 +71,19 @@ CREATE TABLE IF NOT EXISTS public.orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Tracks delivery-alert sends so the Paystack callback and webhook cannot
+-- notify the same dispatch number twice for the same paid order.
+CREATE TABLE IF NOT EXISTS public.whatsapp_order_notifications (
+    order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+    recipient TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'sending' CHECK (status IN ('sending', 'sent', 'failed')),
+    provider_message_id TEXT,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    PRIMARY KEY (order_id, recipient)
+);
+
 -- 5. STORE SETTINGS TABLE
 CREATE TABLE IF NOT EXISTS public.store_settings (
     id TEXT PRIMARY KEY DEFAULT 'primary_store',
@@ -96,6 +109,7 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.whatsapp_order_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public Read Categories" ON public.categories;
@@ -113,10 +127,10 @@ CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT TO anon, 
 CREATE POLICY "Public Read Products" ON public.products FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Public Read Settings" ON public.store_settings FOR SELECT TO anon, authenticated USING (true);
 
-REVOKE ALL ON public.users, public.orders FROM anon, authenticated;
+REVOKE ALL ON public.users, public.orders, public.whatsapp_order_notifications FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.products, public.categories, public.store_settings FROM anon, authenticated;
 GRANT SELECT ON public.products, public.categories, public.store_settings TO anon, authenticated;
-GRANT ALL ON public.users, public.orders, public.products, public.categories, public.store_settings TO service_role;
+GRANT ALL ON public.users, public.orders, public.products, public.categories, public.store_settings, public.whatsapp_order_notifications TO service_role;
 
 -- Limit owner accounts to one per store.
 CREATE UNIQUE INDEX IF NOT EXISTS users_single_owner_idx ON public.users ((role)) WHERE role = 'owner';

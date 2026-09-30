@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { Category, Order, Product, Role, StoreSettings, User } from './types';
 import { getSupabaseAdmin } from './supabaseAdmin';
-import { buildWhatsAppOrderLink } from '@/lib/whatsapp';
+import { notifyDispatchRecipients } from './whatsappServer';
 
 type Row = Record<string, any>;
 
@@ -428,13 +428,7 @@ export async function markOrderPaid(
   if (!row) return null;
 
   const order = mapOrder(row);
-  try {
-    const ownerNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0248565916';
-    const link = buildWhatsAppOrderLink(order, ownerNumber);
-    console.info('WhatsApp order notification link:', link);
-  } catch (error) {
-    console.error('WhatsApp notification build failed:', error);
-  }
+  await notifyDispatchRecipients(order);
   return order;
 }
 

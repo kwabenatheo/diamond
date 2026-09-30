@@ -56,6 +56,24 @@ The checkout redirects customers to Paystack-hosted checkout for card or mobile-
 
 For live payments, set `PAYSTACK_SECRET_KEY` to the live secret key (`sk_live_...`) in `.env.local` for local testing and in Vercel **Settings → Environment Variables** for Production. Keep it server-only (never `NEXT_PUBLIC_`), and redeploy after changing Vercel environment variables. Your Paystack account must be activated for the payment channels you enable.
 
+## Automatic WhatsApp dispatch alerts
+
+After Paystack verifies an order as paid, delivery orders trigger a server-side WhatsApp Cloud API template message to **0598015154** and **0242657521**. Pickup orders do not send dispatch alerts. The alert contains the order number, customer contact, delivery address/instructions, items, total, and payment reference. A Supabase notification log prevents duplicate alerts when both the Paystack callback and webhook report the same payment.
+
+To enable actual automatic messages (a regular `wa.me` link cannot send messages automatically):
+
+1. Set up a WhatsApp Business Platform / Meta Cloud API sender and add both recipient numbers as opted-in recipients where required.
+2. In WhatsApp Manager, create and get approval for a utility template with **one body text variable**, for example: `Paid delivery order details:\n{{1}}`. Use a template name such as `diamond_paid_delivery_order`.
+3. Add these server-only variables to `.env.local` and Vercel Production, using your Meta values:
+	- `WHATSAPP_CLOUD_API_TOKEN` — a valid WhatsApp Cloud API access token.
+	- `WHATSAPP_PHONE_NUMBER_ID` — the sender phone-number ID from Meta.
+	- `WHATSAPP_ORDER_TEMPLATE` — the approved template name.
+	- `WHATSAPP_ORDER_TEMPLATE_LANGUAGE` — the approved template language code (defaults to `en`).
+	- `WHATSAPP_GRAPH_API_VERSION` — optional Graph API version (defaults to `v23.0`).
+4. Run the updated `supabase_schema.sql` in the project's Supabase SQL Editor to create the private WhatsApp notification log table, then redeploy Vercel.
+
+The Cloud API token must never be exposed in client code or a `NEXT_PUBLIC_` variable. If WhatsApp variables/template setup is incomplete, payment still succeeds and the server records the sending error in logs; the app does not falsely report that a WhatsApp alert was sent.
+
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel

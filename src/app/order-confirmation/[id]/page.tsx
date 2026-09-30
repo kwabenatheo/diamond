@@ -47,18 +47,6 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
     fetchOrder();
   }, [id, clearCart]);
 
-  useEffect(() => {
-    if (!order || order.paymentStatus !== 'paid' || typeof window === 'undefined') return;
-
-    const ownerNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0509735216';
-    const whatsappUrl = buildWhatsAppOrderLink(order, ownerNumber);
-    const timer = window.setTimeout(() => {
-      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-    }, 600);
-
-    return () => window.clearTimeout(timer);
-  }, [order]);
-
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center text-slate-400">

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Wine, Lock, Mail, ArrowRight, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { Wine, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -128,87 +128,6 @@ export default function LoginPage() {
           </Link>
         </div>
       </form>
-
-      {/* Pre-Created Testing Credentials Box */}
-      <div className="bg-[#0b1222] border border-amber-500/30 p-4 rounded-2xl text-xs space-y-3 shadow-lg">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-          <div className="flex items-center gap-1.5 font-bold text-amber-400">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Pre-Created Test Accounts</span>
-          </div>
-          <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded font-mono">
-            Password: Password@123
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {/* Owner */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/50 transition">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-[11px]">Shop Owner</span>
-                <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.2 rounded">FULL ACCESS</span>
-              </div>
-              <div className="text-[11px] text-slate-400 font-mono">owner@diamondjay.com</div>
-              <div className="text-[10px] text-slate-500">Contact: +233 248 565 916</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIdentifier('owner@diamondjay.com');
-                setPassword('Password@123');
-              }}
-              className="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-2.5 py-1.5 rounded-lg border border-amber-500/30 transition"
-            >
-              Fill Credentials
-            </button>
-          </div>
-
-          {/* Staff */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-blue-500/50 transition">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-[11px]">Staff Member</span>
-                <span className="text-[9px] bg-blue-500/20 text-blue-300 font-bold px-1.5 py-0.2 rounded">OPERATIONS</span>
-              </div>
-              <div className="text-[11px] text-slate-400 font-mono">staff@diamondjay.com</div>
-              <div className="text-[10px] text-slate-500">Orders queue & inventory only</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIdentifier('staff@diamondjay.com');
-                setPassword('Password@123');
-              }}
-              className="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-bold px-2.5 py-1.5 rounded-lg border border-blue-500/30 transition"
-            >
-              Fill Credentials
-            </button>
-          </div>
-
-          {/* Customer */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 transition">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-[11px]">Customer</span>
-                <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.2 rounded">SHOPPER</span>
-              </div>
-              <div className="text-[11px] text-slate-400 font-mono">customer@diamondjay.com</div>
-              <div className="text-[10px] text-slate-500">Cart, Accra delivery & tracking</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIdentifier('customer@diamondjay.com');
-                setPassword('Password@123');
-              }}
-              className="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold px-2.5 py-1.5 rounded-lg border border-emerald-500/30 transition"
-            >
-              Fill Credentials
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
