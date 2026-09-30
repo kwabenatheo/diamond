@@ -10,7 +10,7 @@ import Footer from '@/components/Footer';
 export const metadata: Metadata = {
   title: 'Diamond Jay Enterprise | Drinks, Spirits, Wine & Beer Store — Accra, Ghana',
   description:
-    'Shop authentic imported whiskies, premium spirits, fine wines, chilled beers, and liqueurs at Diamond Jay Enterprise, 410 New Road, Accra. Fast delivery across Accra and free in-store pickup.',
+    'Shop authentic imported whiskies, premium spirits, fine wines, beers, and liqueurs at Diamond Jay Enterprise, 410 New Road, Accra. Fast delivery across Accra and free in-store pickup.',
   keywords: 'drinks store Accra, liquor shop Ghana, alcohol delivery Accra, Diamond Jay Enterprise, buy wine Accra, beer crates Accra',
 };
 

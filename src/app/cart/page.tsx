@@ -16,7 +16,7 @@ export default function CartPage() {
         </div>
         <h1 className="text-2xl font-black text-white">Your Drinks Cart is Empty</h1>
         <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto">
-          Stock up on your favorite whiskies, chilled beers, fine wines, or party crates before heading to checkout.
+          Stock up on your favorite whiskies, beers, fine wines, or party crates before heading to checkout.
         </p>
         <Link
           href="/catalog"

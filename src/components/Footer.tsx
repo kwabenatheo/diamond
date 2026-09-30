@@ -19,7 +19,7 @@ export default function Footer() {
             </span>
           </div>
           <p className="text-slate-400 text-xs leading-relaxed">
-            Accra’s trusted retail destination for authentic imported spirits, fine international wines, chilled local beers, prestige champagnes, and cocktail mixers.
+            Accra’s trusted retail destination for authentic imported spirits, fine international wines, local beers, prestige champagnes, and cocktail mixers.
           </p>
           <div className="space-y-1.5 pt-2 text-slate-300">
             <div className="flex items-start gap-2">
@@ -83,7 +83,7 @@ export default function Footer() {
             </li>
             <li>
               <Link href="/catalog?category=beers-ciders" className="hover:text-[#d4af37] transition">
-                Chilled Beers & Ciders (Bottles & Crates)
+                Beers & Ciders (Bottles & Crates)
               </Link>
             </li>
             <li>

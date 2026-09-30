@@ -57,7 +57,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 font-medium">
           <Sparkles className="w-4 h-4 text-[#d4af37] shrink-0" />
           <span>
-            🎉 <strong className="text-white">Diamond Jay Enterprise:</strong> Fast Chilled Delivery Across Accra • Free Pickup at <strong>410 New Road</strong>
+            🎉 <strong className="text-white">Diamond Jay Enterprise:</strong> Fast Delivery Across Accra • Free Pickup at <strong>410 New Road</strong>
           </span>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              From aged single malt whiskies and French champagnes to chilled Ghanaian lagers and traditional bitters. Order online with instant Paystack (MTN MoMo, Card) or pick up in-store at <strong>410 New Road</strong>.
+              From aged single malt whiskies and French champagnes to Ghanaian lagers and traditional bitters. Order online with instant Paystack (MTN MoMo, Card) or pick up in-store at <strong>410 New Road</strong>.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -218,7 +218,7 @@ export default function HomePage() {
             </h2>
 
             <p className="text-slate-300 text-sm leading-relaxed">
-              Prefer to choose your drinks in person or pick up an online order? We are conveniently situated on New Road in Accra. Our shelves are always stocked with chilled beers, gift-boxed whiskies, and celebration champagnes.
+              Prefer to choose your drinks in person or pick up an online order? We are conveniently situated on New Road in Accra. Our shelves are always stocked with beers, gift-boxed whiskies, and celebration champagnes.
             </p>
 
             <div className="space-y-3 text-xs sm:text-sm text-slate-200">
@@ -267,7 +267,7 @@ export default function HomePage() {
               <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center font-bold">
                 <Truck className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-white">Chilled Dispatch</h4>
+              <h4 className="text-sm font-bold text-white">Fast Dispatch</h4>
               <p className="text-xs text-slate-400">
                 Cold beers and wines dispatched rapidly to your door in Accra.
               </p>

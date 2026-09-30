@@ -214,7 +214,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-[#d4af37] shrink-0" />
-                <span>Accra Express Chilled Delivery</span>
+                <span>Accra Express Delivery</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#d4af37] shrink-0" />

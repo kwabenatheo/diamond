@@ -300,7 +300,7 @@ export default function CheckoutPage() {
                 <span>Pickup Station: 410 New Road, Accra</span>
               </div>
               <p className="text-slate-300 leading-relaxed">
-                Your drinks order will be boxed, packed, and chilled for you. Please present your order confirmation number at the counter when you arrive.
+                Your drinks order will be packed for you. Please present your order confirmation number at the counter when you arrive.
               </p>
               <div className="text-[11px] text-slate-400 pt-1 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />

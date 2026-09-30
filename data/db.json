@@ -54,7 +54,7 @@
       "id": "cat_beer_cider",
       "name": "Beers & Ciders",
       "slug": "beers-ciders",
-      "description": "Chilled local Ghanaian brews, international draughts, stouts, and ciders.",
+      "description": "Local Ghanaian brews, international draughts, stouts, and ciders.",
       "image": "https://images.unsplash.com/photo-1608270199042-45e0f73fce81?auto=format&fit=crop&w=600&q=80"
     },
     {
@@ -158,7 +158,7 @@
       "alcoholPercentage": 7,
       "originCountry": "Spain",
       "imageUrl": "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=800&q=80",
-      "description": "Crisp, fruity, and delightfully sweet Spanish sangria infused with Mediterranean citrus and cinnamon spices. Best served chilled over ice with fresh citrus slices.",
+      "description": "Crisp, fruity, and delightfully sweet Spanish sangria infused with Mediterranean citrus and cinnamon spices. Best served over ice with fresh citrus slices.",
       "isFeatured": false,
       "isActive": true,
       "createdAt": "2026-09-28T00:57:23.772Z"
@@ -308,7 +308,7 @@
       "alcoholPercentage": 0,
       "originCountry": "Ghana",
       "imageUrl": "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=800&q=80",
-      "description": "Chilled six-pack cans of original Coca-Cola. Perfect standalone refreshment or as a mixer for whiskey and dark rum.",
+      "description": "Six-pack cans of original Coca-Cola. Perfect standalone refreshment or as a mixer for whiskey and dark rum.",
       "isFeatured": false,
       "isActive": true,
       "createdAt": "2026-09-28T00:57:23.772Z"

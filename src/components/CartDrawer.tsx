@@ -47,7 +47,7 @@ export default function CartDrawer() {
                 </div>
                 <p className="font-semibold text-slate-200">Your cart is empty</p>
                 <p className="text-xs text-slate-400 mt-1 mb-5">
-                  Browse our chilled beers, fine wines, and premium spirits to get started.
+                  Browse our beers, fine wines, and premium spirits to get started.
                 </p>
                 <Link
                   href="/catalog"
