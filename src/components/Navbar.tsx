@@ -46,7 +46,7 @@ export default function Navbar() {
             </span>
             <span className="flex items-center gap-1 text-slate-300">
               <Clock className="w-3 h-3 text-[#d4af37]" />
-              Open Daily: 7:00 AM – 9:00 PM
+              Open Daily: 7:40 AM – 9:00 PM
             </span>
           </div>
           <div className="flex items-center gap-4">
