@@ -267,13 +267,15 @@ export default function StaffInventoryPage() {
             ))}
           </select>
 
-          <button
-            onClick={openAddModal}
-            className="bg-[#d4af37] hover:bg-[#c5a028] text-slate-950 font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Add New Drink
-          </button>
+          {isOwner && (
+            <button
+              onClick={openAddModal}
+              className="bg-[#d4af37] hover:bg-[#c5a028] text-slate-950 font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Add New Drink
+            </button>
+          )}
         </div>
       </div>
 
@@ -291,7 +293,7 @@ export default function StaffInventoryPage() {
                   <th className="p-4">Price (GHS)</th>
                   <th className="p-4">Current Stock</th>
                   <th className="p-4">Visibility</th>
-                  <th className="p-4 text-right">Actions</th>
+                  {isOwner && <th className="p-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
@@ -316,13 +318,15 @@ export default function StaffInventoryPage() {
                       <td className="p-4 font-black text-white text-sm">GHS {p.price.toFixed(2)}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleUpdateStock(p.id, p.stockQuantity - 1)}
-                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
-                            title="Decrease 1"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
+                          {isOwner && (
+                            <button
+                              onClick={() => handleUpdateStock(p.id, p.stockQuantity - 1)}
+                              className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+                              title="Decrease 1"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                          )}
                           <span
                             className={`font-black px-2 py-0.5 rounded text-xs min-w-8 text-center ${
                               isOut
@@ -334,21 +338,19 @@ export default function StaffInventoryPage() {
                           >
                             {p.stockQuantity}
                           </span>
-                          <button
-                            onClick={() => handleUpdateStock(p.id, p.stockQuantity + 1)}
-                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
-                            title="Increase 1"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                          {isOwner && (
+                            <button
+                              onClick={() => handleUpdateStock(p.id, p.stockQuantity + 1)}
+                              className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+                              title="Increase 1"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </td>
                       <td className="p-4">
-                        <button
-                          onClick={() => handleToggleActive(p)}
-                          className="flex items-center gap-1.5 cursor-pointer"
-                          title="Toggle active in online store"
-                        >
+                        <div className="flex items-center gap-1.5">
                           {p.isActive ? (
                             <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                               <Check className="w-3 h-3" /> Active
@@ -358,9 +360,9 @@ export default function StaffInventoryPage() {
                               Hidden
                             </span>
                           )}
-                        </button>
+                        </div>
                       </td>
-                      <td className="p-4 text-right">
+                      {isOwner && <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEditModal(p)}
@@ -384,7 +386,7 @@ export default function StaffInventoryPage() {
                             </button>
                           )}
                         </div>
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}
@@ -395,7 +397,7 @@ export default function StaffInventoryPage() {
       )}
 
       {/* Add / Edit Product Modal with Image Upload */}
-      {modalOpen && (
+      {isOwner && modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-lg bg-[#0d1527] border border-slate-700 rounded-3xl p-6 space-y-4 text-slate-100 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -601,7 +603,7 @@ export default function StaffInventoryPage() {
       )}
 
       {/* Delete Confirmation Modal (Owner Only) */}
-      {deleteModalOpen && productToDelete && (
+      {isOwner && deleteModalOpen && productToDelete && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-[#0d1527] border border-red-800 rounded-3xl p-6 space-y-4 text-slate-100 shadow-2xl">
             <div className="flex items-center gap-2 text-red-400">

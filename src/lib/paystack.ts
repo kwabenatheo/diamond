@@ -1,100 +1,138 @@
 import crypto from 'crypto';
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || '';
-const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder_diamondjay';
+function getPaystackSecretKey(): string {
+  const key = process.env.PAYSTACK_SECRET_KEY;
+  if (!key || !/^sk_(test|live)_/.test(key)) {
+    throw new Error('Paystack is not configured. Set PAYSTACK_SECRET_KEY to your Paystack test or live secret key.');
+  }
+  return key;
+}
 
-export interface PaystackVerifyResponse {
+interface PaystackTransaction {
+  id: number;
+  status: 'success' | 'failed' | 'abandoned';
+  reference: string;
+  amount: number;
+  gateway_response: string;
+  paid_at: string;
+  channel: string;
+  currency: string;
+  customer: {
+    id: number;
+    email: string;
+    customer_code: string;
+    phone: string;
+  };
+  metadata?: Record<string, unknown>;
+}
+
+interface PaystackApiResponse<T> {
   status: boolean;
   message: string;
-  data?: {
-    id: number;
-    status: 'success' | 'failed' | 'abandoned';
+  data?: T;
+}
+
+export async function initializePaystackTransaction(input: {
+  email: string;
+  amount: number;
+  phone: string;
+  reference: string;
+  callbackUrl: string;
+  metadata: Record<string, unknown>;
+}) {
+  const response = await fetch('https://api.paystack.co/transaction/initialize', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getPaystackSecretKey()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: input.email,
+      amount: input.amount,
+      currency: 'GHS',
+      reference: input.reference,
+      callback_url: input.callbackUrl,
+      channels: ['card', 'mobile_money'],
+      metadata: input.metadata,
+      ...(input.phone ? { phone: input.phone } : {}),
+    }),
+    cache: 'no-store',
+  });
+  const result = (await response.json()) as PaystackApiResponse<{
+    authorization_url: string;
+    access_code: string;
     reference: string;
-    amount: number; // in pesewas (100 pesewas = 1 GHS)
-    gateway_response: string;
-    paid_at: string;
-    channel: 'card' | 'mobile_money';
-    currency: 'GHS';
-    customer: {
-      id: number;
-      email: string;
-      customer_code: string;
-      phone: string;
-    };
-    metadata?: Record<string, any>;
-  };
+  }>;
+
+  if (!response.ok || !result.status || !result.data?.authorization_url) {
+    throw new Error(result.message || 'Paystack could not initialize this transaction.');
+  }
+  return result.data;
 }
 
 export async function verifyPaystackTransaction(reference: string): Promise<{
   success: boolean;
   message: string;
-  channel?: 'card' | 'mobile_money';
+  channel?: string;
   amount?: number;
+  currency?: string;
   paidAt?: string;
-  data?: any;
+  reference?: string;
+  metadata?: Record<string, unknown>;
 }> {
-  // If in mock or test environment with demo reference or placeholder key
-  if (
-    !PAYSTACK_SECRET_KEY ||
-    PAYSTACK_SECRET_KEY.includes('placeholder') ||
-    reference.startsWith('ref_demo_') ||
-    reference.startsWith('ref_momo_demo_') ||
-    reference.startsWith('ref_card_demo_')
-  ) {
-    // Simulated realistic test verification
-    return {
-      success: true,
-      message: 'Simulated Paystack Verification Successful',
-      channel: reference.includes('card') ? 'card' : 'mobile_money',
-      paidAt: new Date().toISOString(),
-    };
-  }
-
   try {
-    const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${getPaystackSecretKey()}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      }
+    );
+    const result = (await response.json()) as PaystackApiResponse<PaystackTransaction>;
+    const transaction = result.data;
 
-    const body: PaystackVerifyResponse = await res.json();
-
-    if (body.status && body.data && body.data.status === 'success') {
-      return {
-        success: true,
-        message: body.message,
-        channel: body.data.channel,
-        amount: body.data.amount / 100, // convert pesewas to GHS
-        paidAt: body.data.paid_at,
-        data: body.data,
-      };
-    } else {
+    if (!response.ok || !result.status || !transaction) {
+      return { success: false, message: result.message || 'Paystack could not verify this transaction.' };
+    }
+    if (transaction.status !== 'success') {
       return {
         success: false,
-        message: body.data?.gateway_response || body.message || 'Payment not completed or failed',
+        message: transaction.gateway_response || `Payment status: ${transaction.status}`,
       };
     }
-  } catch (error: any) {
+
+    return {
+      success: true,
+      message: result.message,
+      channel: transaction.channel,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      paidAt: transaction.paid_at,
+      reference: transaction.reference,
+      metadata: transaction.metadata,
+    };
+  } catch (error) {
     console.error('Paystack verification error:', error);
     return {
       success: false,
-      message: error.message || 'Internal connection error verifying payment with Paystack',
+      message: error instanceof Error ? error.message : 'Internal connection error verifying payment with Paystack.',
     };
   }
 }
 
 export function verifyPaystackWebhookSignature(rawBody: string, signature: string): boolean {
-  if (!PAYSTACK_SECRET_KEY) return true; // in demo fallback
+  const key = process.env.PAYSTACK_SECRET_KEY;
+  if (!key || !signature) return false;
   try {
-    const hash = crypto
-      .createHmac('sha512', PAYSTACK_SECRET_KEY)
-      .update(rawBody)
-      .digest('hex');
-    return hash === signature;
-  } catch (err) {
+    const expected = crypto.createHmac('sha512', key).update(rawBody).digest('hex');
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const signatureBuffer = Buffer.from(signature, 'hex');
+    return expectedBuffer.length === signatureBuffer.length && crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+  } catch {
     return false;
   }
 }

@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || (user.role !== 'staff' && user.role !== 'owner')) {
-      return NextResponse.json({ error: 'Unauthorized. Staff or owner access required.' }, { status: 403 });
+    if (!user || user.role !== 'owner') {
+      return NextResponse.json({ error: 'Unauthorized. Only the Shop Owner can create products.' }, { status: 403 });
     }
 
     const body = await req.json();

@@ -18,8 +18,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || (user.role !== 'staff' && user.role !== 'owner')) {
-      return NextResponse.json({ error: 'Unauthorized. Staff or owner access required.' }, { status: 403 });
+    if (!user || user.role !== 'owner') {
+      return NextResponse.json({ error: 'Unauthorized. Only the Shop Owner can edit products.' }, { status: 403 });
     }
 
     const { id } = await params;

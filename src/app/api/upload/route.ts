@@ -8,8 +8,8 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user || (user.role !== 'staff' && user.role !== 'owner')) {
-      return NextResponse.json({ error: 'Unauthorized. Staff or owner access required.' }, { status: 403 });
+    if (!user || user.role !== 'owner') {
+      return NextResponse.json({ error: 'Unauthorized. Only the Shop Owner can upload product images.' }, { status: 403 });
     }
 
     const formData = await req.formData();

@@ -75,7 +75,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
             }`}
           >
             <Package className="w-4 h-4" />
-            Inventory Control
+            View Inventory
           </Link>
 
           <button
@@ -93,7 +93,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
           <span>
-            Staff Policy: Order cancellations, refunds, staff account management, and financial revenue reports are owner-restricted.
+            Staff Policy: Inventory is view-only. Order cancellations, refunds, staff account management, and financial revenue reports are owner-restricted.
           </span>
         </div>
         {user.role === 'owner' && (

@@ -4,7 +4,7 @@ import { verifyPaystackTransaction } from '@/lib/paystack';
 
 export async function POST(req: NextRequest) {
   try {
-    const { reference, orderId, paymentMethod } = await req.json();
+    const { reference, orderId } = await req.json();
 
     if (!reference || !orderId) {
       return NextResponse.json({ error: 'Payment reference and Order ID are required.' }, { status: 400 });
@@ -27,11 +27,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (
+      verifyResult.reference !== reference ||
+      verifyResult.metadata?.orderId !== order.id ||
+      verifyResult.currency !== 'GHS' ||
+      verifyResult.amount !== Math.round(order.totalAmount * 100)
+    ) {
+      return NextResponse.json(
+        { error: 'The verified Paystack payment does not match this order amount, currency, or reference.' },
+        { status: 400 }
+      );
+    }
+
     // Mark order as paid, update orderStatus to 'confirmed', and deduct stock
     const updatedOrder = await markOrderPaid(
       order.id,
       reference,
-      paymentMethod || (verifyResult.channel === 'card' ? 'paystack_card' : 'paystack_momo')
+      verifyResult.channel === 'card' ? 'paystack_card' : 'paystack_momo'
     );
 
     return NextResponse.json({

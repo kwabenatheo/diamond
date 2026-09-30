@@ -18,12 +18,10 @@ import {
   Clock,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function CheckoutPage() {
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal } = useCart();
   const { user } = useAuth();
-  const router = useRouter();
 
   const [fulfillmentType, setFulfillmentType] = useState<'delivery' | 'pickup'>('delivery');
 
@@ -43,6 +41,13 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeOrderForPayment, setActiveOrderForPayment] = useState<Order | null>(null);
+  const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('payment') === 'failed') {
+      setPaymentNotice('Payment was not completed. Your order is still unpaid; you can retry checkout.');
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -129,12 +134,6 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePaymentSuccess = (updatedOrder: Order) => {
-    clearCart();
-    setActiveOrderForPayment(null);
-    router.push(`/order-confirmation/${updatedOrder.id}`);
-  };
-
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       <div>
@@ -144,6 +143,13 @@ export default function CheckoutPage() {
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Checkout & Order Placement</h1>
         <p className="text-xs text-slate-400">Complete your contact, delivery details, and pay securely via Paystack.</p>
       </div>
+
+      {paymentNotice && (
+        <div className="p-4 bg-amber-950/70 border border-amber-800 text-amber-200 rounded-xl text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{paymentNotice}</span>
+        </div>
+      )}
 
       <form onSubmit={handleCreateOrderAndPay} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left 2 Cols: Form */}
@@ -405,7 +411,6 @@ export default function CheckoutPage() {
       {activeOrderForPayment && (
         <PaystackPaymentModal
           order={activeOrderForPayment}
-          onSuccess={handlePaymentSuccess}
           onCancel={() => setActiveOrderForPayment(null)}
         />
       )}

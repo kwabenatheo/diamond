@@ -50,6 +50,12 @@ To switch an existing installation:
 
 The service-role key is used only in server-side code and the one-time local migration script. The `users` and `orders` tables are not directly readable or writable with the public anon key.
 
+## Paystack live payments
+
+The checkout redirects customers to Paystack-hosted checkout for card or mobile-money payment. Paystack returns to the server callback, which verifies the reference, GHS currency, exact order amount, and order metadata before the database marks an order paid and reduces inventory. No card or wallet credentials are collected by this site.
+
+For live payments, set `PAYSTACK_SECRET_KEY` to the live secret key (`sk_live_...`) in `.env.local` for local testing and in Vercel **Settings → Environment Variables** for Production. Keep it server-only (never `NEXT_PUBLIC_`), and redeploy after changing Vercel environment variables. Your Paystack account must be activated for the payment channels you enable.
+
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel

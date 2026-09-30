@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrderById, getStoreSettings } from '@/lib/db';
+import { randomUUID } from 'crypto';
+import { getOrderById } from '@/lib/db';
+import { initializePaystackTransaction } from '@/lib/paystack';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,25 +19,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order has already been paid.' }, { status: 400 });
     }
 
-    const settings = await getStoreSettings();
-    const reference = `DJ_${Date.now()}_${order.orderNumber.replace(/[^a-zA-Z0-9]/g, '')}`;
+    if (order.paymentStatus !== 'unpaid') {
+      return NextResponse.json({ error: 'This order is not awaiting payment.' }, { status: 400 });
+    }
+
+    const reference = `DJ_${Date.now()}_${randomUUID().replace(/-/g, '')}`;
+    const transaction = await initializePaystackTransaction({
+      email: order.customerEmail,
+      phone: order.customerPhone,
+      amount: Math.round(order.totalAmount * 100),
+      reference,
+      callbackUrl: `${new URL(req.url).origin}/api/paystack/callback`,
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        fulfillmentType: order.fulfillmentType,
+      },
+    });
 
     return NextResponse.json({
       success: true,
       data: {
-        reference,
-        amount: Math.round(order.totalAmount * 100), // in pesewas (100 pesewas = 1 GHS)
-        currency: 'GHS',
-        email: order.customerEmail,
-        phone: order.customerPhone,
-        publicKey: settings.paystackPublicKey || process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder_diamondjay',
-        channels: ['card', 'mobile_money'],
-        metadata: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customerName,
-          fulfillmentType: order.fulfillmentType,
-        },
+        authorizationUrl: transaction.authorization_url,
+        reference: transaction.reference,
       },
     });
   } catch (error: any) {

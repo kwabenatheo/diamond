@@ -128,7 +128,7 @@ export default function OwnerStaffPage() {
             Staff Accounts & Access Controls
           </h2>
           <p className="text-xs text-slate-400">
-            Grant day-to-day order processing and inventory permissions to shop employees.
+            Grant day-to-day order processing permissions to shop employees. Inventory changes are owner-only.
           </p>
         </div>
 

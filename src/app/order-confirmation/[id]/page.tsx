@@ -15,10 +15,12 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
 
 export default function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const { id } = resolvedParams;
+  const { clearCart } = useCart();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,7 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
         }
         const data = await res.json();
         setOrder(data.order);
+        if (data.order?.paymentStatus === 'paid') clearCart();
       } catch (err: any) {
         setError(err.message || 'Error fetching order details');
       } finally {
@@ -40,10 +43,10 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
       }
     }
     fetchOrder();
-  }, [id]);
+  }, [id, clearCart]);
 
   useEffect(() => {
-    if (!order || typeof window === 'undefined') return;
+    if (!order || order.paymentStatus !== 'paid' || typeof window === 'undefined') return;
 
     const ownerNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0509735216';
     const whatsappUrl = buildWhatsAppOrderLink(order, ownerNumber);
