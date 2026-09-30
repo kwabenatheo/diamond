@@ -1,5 +1,10 @@
 import { Order } from '@/lib/types';
 
+export const COURIER_WHATSAPP_CONTACTS = [
+  { number: '0598015154', label: 'Courier Contact 1' },
+  { number: '0242657521', label: 'Courier Contact 2' },
+] as const;
+
 export function normalizeWhatsAppNumber(rawNumber?: string): string {
   const digits = (rawNumber || '').replace(/\D/g, '');
 
@@ -22,7 +27,7 @@ export function buildWhatsAppOrderMessage(order: Order): string {
   const delivery = order.deliveryDetails;
 
   const lines = [
-    `New order received: ${order.orderNumber}`,
+    `PAID ORDER — COURIER ARRANGEMENT: ${order.orderNumber}`,
     `Customer: ${order.customerName}`,
     `Phone: ${order.customerPhone}`,
     `Email: ${order.customerEmail}`,
@@ -48,6 +53,8 @@ export function buildWhatsAppOrderMessage(order: Order): string {
 
   lines.push(`Subtotal: GHS ${order.subtotal.toFixed(2)}`);
   lines.push(`Total: GHS ${order.totalAmount.toFixed(2)}`);
+  if (order.paystackReference) lines.push(`Payment reference: ${order.paystackReference}`);
+  lines.push('Please help arrange a courier for this delivery. Kindly confirm the courier fee and estimated arrival time.');
 
   return lines.join('\n');
 }

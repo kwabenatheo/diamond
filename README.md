@@ -56,23 +56,13 @@ The checkout redirects customers to Paystack-hosted checkout for card or mobile-
 
 For live payments, set `PAYSTACK_SECRET_KEY` to the live secret key (`sk_live_...`) in `.env.local` for local testing and in Vercel **Settings → Environment Variables** for Production. Keep it server-only (never `NEXT_PUBLIC_`), and redeploy after changing Vercel environment variables. Your Paystack account must be activated for the payment channels you enable.
 
-## Automatic WhatsApp dispatch alerts
+## Customer WhatsApp courier arrangement and in-app alerts
 
-After Paystack verifies an order as paid, delivery orders trigger a server-side WhatsApp Cloud API template message to **0598015154** and **0242657521**. Pickup orders do not send dispatch alerts. The alert contains the order number, customer contact, delivery address/instructions, items, total, and payment reference. A Supabase notification log prevents duplicate alerts when both the Paystack callback and webhook report the same payment.
+After a delivery order is paid, the confirmation page offers WhatsApp buttons for **0598015154** and **0242657521**. The customer's selected WhatsApp chat opens with their order, paid amount, contact details, address, notes, and courier-arrangement request filled in; the customer reviews and taps **Send**. No Meta Business account or WhatsApp API credentials are required. Pickup orders do not show courier buttons.
 
-To enable actual automatic messages (a regular `wa.me` link cannot send messages automatically):
+New orders create private in-app notifications for both owner and staff. The bell in each portal refreshes every 12 seconds, shows an unread badge and toast for newly arriving orders, and lets the user mark alerts read or open the order queue.
 
-1. Set up a WhatsApp Business Platform / Meta Cloud API sender and add both recipient numbers as opted-in recipients where required.
-2. In WhatsApp Manager, create and get approval for a utility template with **one body text variable**, for example: `Paid delivery order details:\n{{1}}`. Use a template name such as `diamond_paid_delivery_order`.
-3. Add these server-only variables to `.env.local` and Vercel Production, using your Meta values:
-	- `WHATSAPP_CLOUD_API_TOKEN` — a valid WhatsApp Cloud API access token.
-	- `WHATSAPP_PHONE_NUMBER_ID` — the sender phone-number ID from Meta.
-	- `WHATSAPP_ORDER_TEMPLATE` — the approved template name.
-	- `WHATSAPP_ORDER_TEMPLATE_LANGUAGE` — the approved template language code (defaults to `en`).
-	- `WHATSAPP_GRAPH_API_VERSION` — optional Graph API version (defaults to `v23.0`).
-4. Run the updated `supabase_schema.sql` in the project's Supabase SQL Editor to create the private WhatsApp notification log table, then redeploy Vercel.
-
-The Cloud API token must never be exposed in client code or a `NEXT_PUBLIC_` variable. If WhatsApp variables/template setup is incomplete, payment still succeeds and the server records the sending error in logs; the app does not falsely report that a WhatsApp alert was sent.
+Run the updated `supabase_schema.sql` in the Supabase SQL Editor to create the `order_notifications` table and trigger that generates the owner/staff alerts when an order is placed, then redeploy. There is no WhatsApp Cloud API setup required for customer-forwarded messages.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import OrderNotificationCenter from '@/components/OrderNotificationCenter';
 import { Package, ClipboardList, ShieldAlert, AlertTriangle } from 'lucide-react';
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
@@ -53,7 +54,8 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Tab Links */}
-        <div className="flex items-center gap-2 text-xs font-bold">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+          <OrderNotificationCenter role="staff" />
           <Link
             href="/staff/orders"
             className={`px-4 py-2 rounded-xl transition flex items-center gap-1.5 ${

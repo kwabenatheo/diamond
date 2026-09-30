@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from 'react';
 import { Order } from '@/lib/types';
-import { buildWhatsAppOrderLink } from '@/lib/whatsapp';
+import { buildWhatsAppOrderLink, COURIER_WHATSAPP_CONTACTS } from '@/lib/whatsapp';
 import {
   CheckCircle2,
   Clock,
@@ -239,15 +239,28 @@ export default function OrderConfirmationPage({ params }: { params: Promise<{ id
           <h3 className="font-bold text-sm text-white uppercase tracking-wider">
             Drinks Ordered
           </h3>
-          <a
-            href={buildWhatsAppOrderLink(order, process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0509735216')}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-[11px]"
-          >
-            Send to Owner on WhatsApp
-          </a>
+          {order.paymentStatus === 'paid' && order.fulfillmentType === 'delivery' && (
+            <p className="w-full text-xs text-slate-300">
+              To arrange your courier, choose a contact below. WhatsApp will open with your order and delivery details ready to send.
+            </p>
+          )}
         </div>
+
+        {order.paymentStatus === 'paid' && order.fulfillmentType === 'delivery' && (
+          <div className="flex flex-wrap gap-2 no-print">
+            {COURIER_WHATSAPP_CONTACTS.map((contact) => (
+              <a
+                key={contact.number}
+                href={buildWhatsAppOrderLink(order, contact.number)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-400"
+              >
+                Arrange courier via WhatsApp · {contact.number}
+              </a>
+            ))}
+          </div>
+        )}
 
         <div className="divide-y divide-slate-800/80">
           {order.items.map((item) => (

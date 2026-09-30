@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import OrderNotificationCenter from '@/components/OrderNotificationCenter';
 import {
   TrendingUp,
   Users,
@@ -66,6 +67,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="flex items-center gap-2">
+          <OrderNotificationCenter role="owner" />
           <a
             href="/api/owner/export"
             download

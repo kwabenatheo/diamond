@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Category, Order, Product, Role, StoreSettings, User } from './types';
 import { getSupabaseAdmin } from './supabaseAdmin';
-import { notifyDispatchRecipients } from './whatsappServer';
 
 type Row = Record<string, any>;
 
@@ -428,7 +427,6 @@ export async function markOrderPaid(
   if (!row) return null;
 
   const order = mapOrder(row);
-  await notifyDispatchRecipients(order);
   return order;
 }
 

@@ -71,17 +71,16 @@ CREATE TABLE IF NOT EXISTS public.orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Tracks delivery-alert sends so the Paystack callback and webhook cannot
--- notify the same dispatch number twice for the same paid order.
-CREATE TABLE IF NOT EXISTS public.whatsapp_order_notifications (
+-- In-app new-order notifications for owner and staff dashboards.
+CREATE TABLE IF NOT EXISTS public.order_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
-    recipient TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'sending' CHECK (status IN ('sending', 'sent', 'failed')),
-    provider_message_id TEXT,
-    error_message TEXT,
+    recipient_role TEXT NOT NULL CHECK (recipient_role IN ('owner', 'staff')),
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    sent_at TIMESTAMP WITH TIME ZONE,
-    PRIMARY KEY (order_id, recipient)
+    read_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE (order_id, recipient_role)
 );
 
 -- 5. STORE SETTINGS TABLE
@@ -109,7 +108,7 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.whatsapp_order_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.order_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public Read Categories" ON public.categories;
@@ -127,10 +126,32 @@ CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT TO anon, 
 CREATE POLICY "Public Read Products" ON public.products FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Public Read Settings" ON public.store_settings FOR SELECT TO anon, authenticated USING (true);
 
-REVOKE ALL ON public.users, public.orders, public.whatsapp_order_notifications FROM anon, authenticated;
+REVOKE ALL ON public.users, public.orders, public.order_notifications FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.products, public.categories, public.store_settings FROM anon, authenticated;
 GRANT SELECT ON public.products, public.categories, public.store_settings TO anon, authenticated;
-GRANT ALL ON public.users, public.orders, public.products, public.categories, public.store_settings, public.whatsapp_order_notifications TO service_role;
+GRANT ALL ON public.users, public.orders, public.products, public.categories, public.store_settings, public.order_notifications TO service_role;
+
+CREATE OR REPLACE FUNCTION public.notify_staff_and_owner_of_new_order()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+        INSERT INTO public.order_notifications (order_id, recipient_role, title, message)
+        VALUES
+            (NEW.id, 'owner', 'New order placed', format('%s from %s · %s · GHS %s · Payment: %s', NEW.order_number, NEW.customer_name, NEW.fulfillment_type, NEW.total_amount, NEW.payment_status)),
+            (NEW.id, 'staff', 'New order placed', format('%s from %s · %s · GHS %s · Payment: %s', NEW.order_number, NEW.customer_name, NEW.fulfillment_type, NEW.total_amount, NEW.payment_status))
+        ON CONFLICT (order_id, recipient_role) DO NOTHING;
+        RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS orders_notify_staff_and_owner ON public.orders;
+CREATE TRIGGER orders_notify_staff_and_owner
+AFTER INSERT ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.notify_staff_and_owner_of_new_order();
 
 -- Limit owner accounts to one per store.
 CREATE UNIQUE INDEX IF NOT EXISTS users_single_owner_idx ON public.users ((role)) WHERE role = 'owner';
