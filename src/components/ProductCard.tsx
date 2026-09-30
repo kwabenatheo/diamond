@@ -66,7 +66,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Price & Action */}
-        <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+        <div className="pt-3 mt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Price</span>
             <span className="text-base font-black text-white">
@@ -78,7 +78,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <button
             onClick={() => addItem(product, 1)}
             disabled={isOutOfStock}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 ${
+            className={`w-full sm:w-auto sm:flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 ${
               isOutOfStock
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 : cartItem
