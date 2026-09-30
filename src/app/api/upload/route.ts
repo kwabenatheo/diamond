@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -33,18 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File size exceeds maximum limit of 5MB.' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json(
-        { error: 'Image storage is not configured. Set the Supabase URL and server-side service role key.' },
-        { status: 500 }
-      );
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const supabaseAdmin = getSupabaseAdmin();
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'product-images';
     const extensions: Record<string, string> = {
       'image/jpeg': 'jpg',

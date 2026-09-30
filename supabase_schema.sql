@@ -90,26 +90,48 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable Row Level Security (RLS) and public access policies
+-- Enable Row Level Security (RLS). All writes and private-table reads are
+-- performed by the authenticated Next.js server using the service-role key.
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 
--- Allow full read access for all tables via anon key
-CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Public Read Products" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public Read Settings" ON public.store_settings FOR SELECT USING (true);
-CREATE POLICY "Public Read Orders" ON public.orders FOR SELECT USING (true);
-CREATE POLICY "Public Insert Orders" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Update Orders" ON public.orders FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Public Read Categories" ON public.categories;
+DROP POLICY IF EXISTS "Public Read Products" ON public.products;
+DROP POLICY IF EXISTS "Public Read Settings" ON public.store_settings;
+DROP POLICY IF EXISTS "Public Read Orders" ON public.orders;
+DROP POLICY IF EXISTS "Public Insert Orders" ON public.orders;
+DROP POLICY IF EXISTS "Public Update Orders" ON public.orders;
+DROP POLICY IF EXISTS "Public Modify Products" ON public.products;
+DROP POLICY IF EXISTS "Public Modify Categories" ON public.categories;
+DROP POLICY IF EXISTS "Public Modify Users" ON public.users;
+DROP POLICY IF EXISTS "Public Modify Settings" ON public.store_settings;
 
--- Allow full modify permissions for products and categories (for Staff/Owner via app)
-CREATE POLICY "Public Modify Products" ON public.products FOR ALL USING (true);
-CREATE POLICY "Public Modify Categories" ON public.categories FOR ALL USING (true);
-CREATE POLICY "Public Modify Users" ON public.users FOR ALL USING (true);
-CREATE POLICY "Public Modify Settings" ON public.store_settings FOR ALL USING (true);
+CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public Read Products" ON public.products FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public Read Settings" ON public.store_settings FOR SELECT TO anon, authenticated USING (true);
+
+REVOKE ALL ON public.users, public.orders FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.products, public.categories, public.store_settings FROM anon, authenticated;
+GRANT SELECT ON public.products, public.categories, public.store_settings TO anon, authenticated;
+GRANT ALL ON public.users, public.orders, public.products, public.categories, public.store_settings TO service_role;
+
+-- Limit owner accounts to one per store.
+CREATE UNIQUE INDEX IF NOT EXISTS users_single_owner_idx ON public.users ((role)) WHERE role = 'owner';
+
+-- Product images are public to display in the storefront; uploads remain server-only.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('product-images', 'product-images', true, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+ON CONFLICT (id) DO UPDATE SET
+    public = true,
+    file_size_limit = 5242880,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "Public read product images" ON storage.objects;
+CREATE POLICY "Public read product images" ON storage.objects
+FOR SELECT TO public USING (bucket_id = 'product-images');
 
 
 -- =========================================================================
@@ -166,3 +188,110 @@ INSERT INTO public.store_settings (
     '[{"id": "zone_central", "name": "Accra Central & Surroundings", "areas": ["Osu", "Cantonments", "Labone", "Adabraka", "Ridge", "Airport Residential"], "fee": 25, "estimatedTime": "30 - 45 mins"}, {"id": "zone_suburban_east", "name": "East Legon & Spintex Corridor", "areas": ["East Legon", "Adjiringanor", "Spintex Road", "Tema Comm 1-12", "Sakumono"], "fee": 40, "estimatedTime": "45 - 60 mins"}, {"id": "zone_outer", "name": "Greater Accra Outer Zones", "areas": ["Madina", "Adenta", "Achimota", "Dansoman", "Kasoa Road", "Dome"], "fee": 60, "estimatedTime": "60 - 90 mins"}]'::jsonb,
     '{"enabled": true, "text": "🎉 Welcome to Diamond Jay Enterprise! Fast delivery across Accra & free in-store pickup at 410 New Road."}'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
+
+-- Atomic payment confirmation: idempotently confirms an order and deducts stock once.
+CREATE OR REPLACE FUNCTION public.mark_order_paid(
+    p_order_id TEXT,
+    p_paystack_reference TEXT,
+    p_payment_method TEXT
+)
+RETURNS public.orders
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    order_row public.orders%ROWTYPE;
+    item JSONB;
+BEGIN
+    SELECT * INTO order_row
+    FROM public.orders
+    WHERE id = p_order_id OR order_number = p_order_id OR paystack_reference = p_order_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN NULL;
+    END IF;
+    IF order_row.payment_status = 'paid' THEN
+        RETURN order_row;
+    END IF;
+    IF order_row.payment_status <> 'unpaid' THEN
+        RAISE EXCEPTION 'Order is not awaiting payment';
+    END IF;
+
+    FOR item IN SELECT value FROM jsonb_array_elements(order_row.items)
+    LOOP
+        UPDATE public.products
+        SET stock_quantity = GREATEST(stock_quantity - (item->>'quantity')::INTEGER, 0)
+        WHERE id = item->>'productId';
+    END LOOP;
+
+    UPDATE public.orders
+    SET payment_status = 'paid',
+            order_status = 'confirmed',
+            paystack_reference = p_paystack_reference,
+            payment_method = p_payment_method,
+            paystack_paid_at = NOW(),
+            updated_at = NOW()
+    WHERE id = order_row.id
+    RETURNING * INTO order_row;
+
+    RETURN order_row;
+END;
+$$;
+
+-- Atomic refund: restocks items once and records refund metadata.
+CREATE OR REPLACE FUNCTION public.refund_order(
+    p_order_id TEXT,
+    p_reason TEXT,
+    p_by_user_id TEXT
+)
+RETURNS public.orders
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    order_row public.orders%ROWTYPE;
+    item JSONB;
+BEGIN
+    SELECT * INTO order_row
+    FROM public.orders
+    WHERE id = p_order_id OR order_number = p_order_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN NULL;
+    END IF;
+    IF order_row.payment_status = 'refunded' THEN
+        RETURN order_row;
+    END IF;
+    IF order_row.payment_status <> 'paid' THEN
+        RAISE EXCEPTION 'Only paid orders can be refunded';
+    END IF;
+
+    FOR item IN SELECT value FROM jsonb_array_elements(order_row.items)
+    LOOP
+        UPDATE public.products
+        SET stock_quantity = stock_quantity + (item->>'quantity')::INTEGER
+        WHERE id = item->>'productId';
+    END LOOP;
+
+    UPDATE public.orders
+    SET payment_status = 'refunded',
+            order_status = 'cancelled',
+            cancellation_reason = p_reason,
+            refunded_at = NOW(),
+            refunded_by = p_by_user_id,
+            updated_at = NOW()
+    WHERE id = order_row.id
+    RETURNING * INTO order_row;
+
+    RETURN order_row;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.mark_order_paid(TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.refund_order(TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.mark_order_paid(TEXT, TEXT, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.refund_order(TEXT, TEXT, TEXT) TO service_role;

@@ -1,156 +1,126 @@
-import fs from 'fs';
-import path from 'path';
-import { User, Product, Category, Order, StoreSettings, Role } from './types';
-import {
-  SEED_USERS,
-  SEED_CATEGORIES,
-  SEED_PRODUCTS,
-  SEED_STORE_SETTINGS,
-} from './seedData';
-import { supabase } from './supabase';
+import { randomUUID } from 'crypto';
+import { Category, Order, Product, Role, StoreSettings, User } from './types';
+import { getSupabaseAdmin } from './supabaseAdmin';
 import { buildWhatsAppOrderLink } from '@/lib/whatsapp';
 
-interface DatabaseSchema {
-  users: User[];
-  categories: Category[];
-  products: Product[];
-  orders: Order[];
-  settings: StoreSettings;
+type Row = Record<string, any>;
+
+function ensureNoError(error: { message: string } | null, action: string): void {
+  if (error) throw new Error(`Supabase ${action} failed: ${error.message}`);
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DATA_DIR, 'db.json');
-
-// Ensure database directory and file exist
-function getInitialData(): DatabaseSchema {
-  const sampleOrders: Order[] = [
-    {
-      id: 'ord_demo_101',
-      orderNumber: 'DJ-2026-1001',
-      customerId: 'usr_customer_1',
-      customerName: 'Akosua Serwaa',
-      customerEmail: 'customer@diamondjay.com',
-      customerPhone: '+233241000003',
-      fulfillmentType: 'delivery',
-      deliveryDetails: {
-        recipientName: 'Akosua Serwaa',
-        phone: '+233241000003',
-        address: 'House 14, Ring Road Central',
-        zone: 'Accra Central & Surroundings',
-        deliveryNotes: 'Leave with security guard if not answering phone',
-      },
-      deliveryFee: 25,
-      subtotal: 900,
-      totalAmount: 925,
-      paymentStatus: 'paid',
-      paymentMethod: 'paystack_momo',
-      paystackReference: 'ref_momo_demo_1001',
-      paystackPaidAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-      orderStatus: 'completed',
-      ageConfirmed: true,
-      createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-      updatedAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-      items: [
-        {
-          id: 'item_101_1',
-          productId: 'prod_jw_black',
-          productName: 'Johnnie Walker Black Label 12 Year Old',
-          productImage: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=800&q=80',
-          volume: '750ml',
-          quantity: 2,
-          unitPrice: 450,
-          totalPrice: 900,
-        },
-      ],
-    },
-    {
-      id: 'ord_demo_102',
-      orderNumber: 'DJ-2026-1002',
-      customerId: 'usr_customer_1',
-      customerName: 'Kofi Boateng (Guest)',
-      customerEmail: 'kofi.b@example.com',
-      customerPhone: '+233208765432',
-      fulfillmentType: 'pickup',
-      deliveryFee: 0,
-      subtotal: 540,
-      totalAmount: 540,
-      paymentStatus: 'paid',
-      paymentMethod: 'paystack_card',
-      paystackReference: 'ref_card_demo_1002',
-      paystackPaidAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      orderStatus: 'confirmed',
-      ageConfirmed: true,
-      createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      items: [
-        {
-          id: 'item_102_1',
-          productId: 'prod_jameson',
-          productName: 'Jameson Irish Whiskey',
-          productImage: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=800&q=80',
-          volume: '750ml',
-          quantity: 1,
-          unitPrice: 360,
-          totalPrice: 360,
-        },
-        {
-          id: 'item_102_2',
-          productId: 'prod_club_bottle',
-          productName: 'Club Premium Lager Beer (Single Bottle)',
-          productImage: 'https://images.unsplash.com/photo-1608270199042-45e0f73fce81?auto=format&fit=crop&w=800&q=80',
-          volume: '625ml',
-          quantity: 10,
-          unitPrice: 18,
-          totalPrice: 180,
-        },
-      ],
-    },
-  ];
-
+function mapProduct(row: Row): Product {
   return {
-    users: SEED_USERS,
-    categories: SEED_CATEGORIES,
-    products: SEED_PRODUCTS,
-    orders: sampleOrders,
-    settings: SEED_STORE_SETTINGS,
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    price: Number(row.price),
+    stockQuantity: Number(row.stock_quantity),
+    volume: row.volume,
+    alcoholPercentage: row.alcohol_percentage == null ? undefined : Number(row.alcohol_percentage),
+    originCountry: row.origin_country || undefined,
+    imageUrl: row.image_url,
+    description: row.description || '',
+    isFeatured: Boolean(row.is_featured),
+    isActive: Boolean(row.is_active),
+    createdAt: row.created_at,
   };
 }
 
-let inMemoryDb: DatabaseSchema | null = null;
-
-function readDb(): DatabaseSchema {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DB_FILE)) {
-      const initial = getInitialData();
-      fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), 'utf-8');
-      inMemoryDb = initial;
-      return initial;
-    }
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    inMemoryDb = parsed;
-    return parsed;
-  } catch (error) {
-    console.error('Error reading db.json:', error);
-    if (inMemoryDb) return inMemoryDb;
-    inMemoryDb = getInitialData();
-    return inMemoryDb;
-  }
+function mapCategory(row: Row): Category {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description || '',
+    image: row.image || undefined,
+  };
 }
 
-function writeDb(data: DatabaseSchema): void {
-  try {
-    inMemoryDb = data;
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (error) {
-    console.error('Error writing db.json:', error);
-  }
+function mapUser(row: Row): User {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    passwordHash: row.password_hash,
+    role: row.role,
+    createdAt: row.created_at,
+  };
+}
+
+function mapOrder(row: Row): Order {
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    customerId: row.customer_id || undefined,
+    customerName: row.customer_name,
+    customerEmail: row.customer_email,
+    customerPhone: row.customer_phone,
+    fulfillmentType: row.fulfillment_type,
+    deliveryDetails: row.delivery_details || undefined,
+    deliveryFee: Number(row.delivery_fee),
+    subtotal: Number(row.subtotal),
+    totalAmount: Number(row.total_amount),
+    paymentStatus: row.payment_status,
+    paymentMethod: row.payment_method || undefined,
+    paystackReference: row.paystack_reference || undefined,
+    paystackPaidAt: row.paystack_paid_at || undefined,
+    orderStatus: row.order_status,
+    ageConfirmed: Boolean(row.age_confirmed),
+    cancellationReason: row.cancellation_reason || undefined,
+    refundedAt: row.refunded_at || undefined,
+    refundedBy: row.refunded_by || undefined,
+    items: row.items || [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapSettings(row: Row): StoreSettings {
+  return {
+    storeName: row.store_name,
+    tagline: row.tagline || '',
+    address: row.address,
+    city: row.city,
+    country: row.country,
+    phone: row.phone,
+    whatsapp: row.whatsapp,
+    email: row.email,
+    minOrderAge: Number(row.min_order_age || 18),
+    businessHours: row.business_hours || [],
+    deliveryZones: row.delivery_zones || [],
+    announcementBanner: row.announcement_banner || { enabled: false, text: '' },
+    paystackPublicKey: row.paystack_public_key || undefined,
+  };
+}
+
+function productToRow(product: Omit<Product, 'id' | 'createdAt'> | Product): Row {
+  return {
+    id: 'id' in product ? product.id : undefined,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    stock_quantity: product.stockQuantity,
+    volume: product.volume,
+    alcohol_percentage: product.alcoholPercentage ?? null,
+    origin_country: product.originCountry ?? null,
+    image_url: product.imageUrl,
+    description: product.description,
+    is_featured: Boolean(product.isFeatured),
+    is_active: product.isActive,
+  };
+}
+
+function userToRow(user: Omit<User, 'createdAt'> | User): Row {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    password_hash: user.passwordHash,
+    role: user.role,
+  };
 }
 
 // ---------------- PRODUCTS ----------------
@@ -161,280 +131,135 @@ export async function getProducts(options?: {
   maxPrice?: number;
   onlyActive?: boolean;
 }): Promise<Product[]> {
-  const db = readDb();
-  let list = db.products;
+  let query = getSupabaseAdmin().from('products').select('*').order('created_at', { ascending: false });
+  if (options?.onlyActive !== false) query = query.eq('is_active', true);
+  if (options?.category && options.category !== 'all') query = query.ilike('category', options.category);
+  if (options?.minPrice !== undefined) query = query.gte('price', options.minPrice);
+  if (options?.maxPrice !== undefined) query = query.lte('price', options.maxPrice);
 
-  if (list.length === 0) {
-    try {
-      const { data, error } = await supabase.from('products').select('*');
-      if (!error && data && data.length > 0) {
-        list = data.map((row: any) => ({
-          id: row.id,
-          name: row.name,
-          category: row.category,
-          price: Number(row.price),
-          stockQuantity: row.stock_quantity,
-          volume: row.volume,
-          alcoholPercentage: row.alcohol_percentage ? Number(row.alcohol_percentage) : undefined,
-          originCountry: row.origin_country,
-          imageUrl: row.image_url,
-          description: row.description || '',
-          isFeatured: row.is_featured,
-          isActive: row.is_active,
-          createdAt: row.created_at,
-        }));
-
-        db.products = list;
-        writeDb(db);
-      }
-    } catch (e) {
-      // Fall through to the local dataset
-    }
-  }
-
-  if (options?.onlyActive !== false) {
-    list = list.filter((p) => p.isActive);
-  }
-
-  if (options?.category && options.category !== 'all') {
-    list = list.filter((p) => p.category.toLowerCase() === options.category?.toLowerCase());
-  }
-
+  const { data, error } = await query;
+  ensureNoError(error, 'product lookup');
+  let products = (data || []).map(mapProduct);
   if (options?.search) {
-    const q = options.search.toLowerCase();
-    list = list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+    const term = options.search.toLowerCase();
+    products = products.filter((product) =>
+      [product.name, product.description, product.category].some((value) => value.toLowerCase().includes(term))
     );
   }
-
-  if (options?.minPrice !== undefined) {
-    list = list.filter((p) => p.price >= options.minPrice!);
-  }
-
-  if (options?.maxPrice !== undefined) {
-    list = list.filter((p) => p.price <= options.maxPrice!);
-  }
-
-  return list;
+  return products;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const db = readDb();
-  const localProduct = db.products.find((p) => p.id === id);
-  if (localProduct) {
-    return localProduct;
-  }
-
-  try {
-    const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
-    if (!error && data) {
-      const mappedProduct = {
-        id: data.id,
-        name: data.name,
-        category: data.category,
-        price: Number(data.price),
-        stockQuantity: data.stock_quantity,
-        volume: data.volume,
-        alcoholPercentage: data.alcohol_percentage ? Number(data.alcohol_percentage) : undefined,
-        originCountry: data.origin_country,
-        imageUrl: data.image_url,
-        description: data.description || '',
-        isFeatured: data.is_featured,
-        isActive: data.is_active,
-        createdAt: data.created_at,
-      };
-
-      db.products.push(mappedProduct);
-      writeDb(db);
-      return mappedProduct;
-    }
-  } catch (e) {}
-
-  return null;
+  const { data, error } = await getSupabaseAdmin().from('products').select('*').eq('id', id).maybeSingle();
+  ensureNoError(error, 'product lookup');
+  return data ? mapProduct(data) : null;
 }
 
 export async function createProduct(productData: Omit<Product, 'id' | 'createdAt'>): Promise<Product> {
-  const newProduct: Product = {
-    ...productData,
-    id: `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    createdAt: new Date().toISOString(),
+  const row = {
+    ...productToRow(productData),
+    id: `prod_${randomUUID()}`,
   };
-
-  try {
-    await supabase.from('products').insert({
-      id: newProduct.id,
-      name: newProduct.name,
-      category: newProduct.category,
-      price: newProduct.price,
-      stock_quantity: newProduct.stockQuantity,
-      volume: newProduct.volume,
-      alcohol_percentage: newProduct.alcoholPercentage,
-      origin_country: newProduct.originCountry,
-      image_url: newProduct.imageUrl,
-      description: newProduct.description,
-      is_featured: newProduct.isFeatured,
-      is_active: newProduct.isActive,
-    });
-  } catch (e) {}
-
-  const db = readDb();
-  db.products.unshift(newProduct);
-  writeDb(db);
-  return newProduct;
+  const { data, error } = await getSupabaseAdmin().from('products').insert(row).select('*').single();
+  ensureNoError(error, 'product creation');
+  return mapProduct(data);
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-  try {
-    const supabaseUpdates: any = {};
-    if (updates.name !== undefined) supabaseUpdates.name = updates.name;
-    if (updates.category !== undefined) supabaseUpdates.category = updates.category;
-    if (updates.price !== undefined) supabaseUpdates.price = updates.price;
-    if (updates.stockQuantity !== undefined) supabaseUpdates.stock_quantity = updates.stockQuantity;
-    if (updates.volume !== undefined) supabaseUpdates.volume = updates.volume;
-    if (updates.alcoholPercentage !== undefined) supabaseUpdates.alcohol_percentage = updates.alcoholPercentage;
-    if (updates.originCountry !== undefined) supabaseUpdates.origin_country = updates.originCountry;
-    if (updates.imageUrl !== undefined) supabaseUpdates.image_url = updates.imageUrl;
-    if (updates.description !== undefined) supabaseUpdates.description = updates.description;
-    if (updates.isFeatured !== undefined) supabaseUpdates.is_featured = updates.isFeatured;
-    if (updates.isActive !== undefined) supabaseUpdates.is_active = updates.isActive;
+  const row: Row = {};
+  if (updates.name !== undefined) row.name = updates.name;
+  if (updates.category !== undefined) row.category = updates.category;
+  if (updates.price !== undefined) row.price = updates.price;
+  if (updates.stockQuantity !== undefined) row.stock_quantity = updates.stockQuantity;
+  if (updates.volume !== undefined) row.volume = updates.volume;
+  if (updates.alcoholPercentage !== undefined) row.alcohol_percentage = updates.alcoholPercentage;
+  if (updates.originCountry !== undefined) row.origin_country = updates.originCountry;
+  if (updates.imageUrl !== undefined) row.image_url = updates.imageUrl;
+  if (updates.description !== undefined) row.description = updates.description;
+  if (updates.isFeatured !== undefined) row.is_featured = updates.isFeatured;
+  if (updates.isActive !== undefined) row.is_active = updates.isActive;
 
-    await supabase.from('products').update(supabaseUpdates).eq('id', id);
-  } catch (e) {}
-
-  const db = readDb();
-  const index = db.products.findIndex((p) => p.id === id);
-  if (index === -1) return null;
-
-  db.products[index] = { ...db.products[index], ...updates };
-  writeDb(db);
-  return db.products[index];
+  const { data, error } = await getSupabaseAdmin()
+    .from('products')
+    .update(row)
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  ensureNoError(error, 'product update');
+  return data ? mapProduct(data) : null;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  try {
-    await supabase.from('products').delete().eq('id', id);
-  } catch (e) {}
-
-  const db = readDb();
-  const initialLen = db.products.length;
-  db.products = db.products.filter((p) => p.id !== id);
-  if (db.products.length !== initialLen) {
-    writeDb(db);
-    return true;
-  }
-  return false;
+  const { data, error } = await getSupabaseAdmin().from('products').delete().eq('id', id).select('id').maybeSingle();
+  ensureNoError(error, 'product deletion');
+  return Boolean(data);
 }
 
 // ---------------- CATEGORIES ----------------
 export async function getCategories(): Promise<Category[]> {
-  try {
-    const { data, error } = await supabase.from('categories').select('*');
-    if (!error && data && data.length > 0) {
-      return data;
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  return db.categories;
+  const { data, error } = await getSupabaseAdmin().from('categories').select('*').order('name');
+  ensureNoError(error, 'category lookup');
+  return (data || []).map(mapCategory);
 }
 
 export async function updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
-  const db = readDb();
-  const index = db.categories.findIndex((c) => c.id === id);
-  if (index === -1) return null;
-  db.categories[index] = { ...db.categories[index], ...updates };
-  writeDb(db);
-  return db.categories[index];
+  const row: Row = {};
+  if (updates.name !== undefined) row.name = updates.name;
+  if (updates.slug !== undefined) row.slug = updates.slug;
+  if (updates.description !== undefined) row.description = updates.description;
+  if (updates.image !== undefined) row.image = updates.image;
+  const { data, error } = await getSupabaseAdmin()
+    .from('categories')
+    .update(row)
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  ensureNoError(error, 'category update');
+  return data ? mapCategory(data) : null;
 }
 
 // ---------------- USERS ----------------
 export async function getUsers(role?: Role): Promise<Omit<User, 'passwordHash'>[]> {
-  try {
-    let query = supabase.from('users').select('id, name, email, phone, role, created_at');
-    if (role) query = query.eq('role', role);
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      return data.map((u: any) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        phone: u.phone,
-        role: u.role,
-        createdAt: u.created_at,
-      }));
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  let users = db.users;
-  if (role) {
-    users = users.filter((u) => u.role === role);
-  }
-  return users.map(({ passwordHash, ...rest }) => rest);
+  let query = getSupabaseAdmin().from('users').select('id, name, email, phone, role, created_at');
+  if (role) query = query.eq('role', role);
+  const { data, error } = await query.order('created_at', { ascending: true });
+  ensureNoError(error, 'user lookup');
+  return (data || []).map((row: Row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    role: row.role,
+    createdAt: row.created_at,
+  }));
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  try {
-    const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
-    if (!error && data) {
-      return {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        passwordHash: data.password_hash,
-        role: data.role,
-        createdAt: data.created_at,
-      };
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  return db.users.find((u) => u.id === id) || null;
+  const { data, error } = await getSupabaseAdmin().from('users').select('*').eq('id', id).maybeSingle();
+  ensureNoError(error, 'user lookup');
+  return data ? mapUser(data) : null;
 }
 
 export async function getUserByEmailOrPhone(identifier: string): Promise<User | null> {
-  const cleanId = identifier.trim().toLowerCase();
-  const digits = cleanId.replace(/[^0-9]/g, '');
+  const clean = identifier.trim();
+  const isEmail = clean.includes('@');
+  if (isEmail) {
+    const { data, error } = await getSupabaseAdmin().from('users').select('*').ilike('email', clean).maybeSingle();
+    ensureNoError(error, 'user lookup');
+    return data ? mapUser(data) : null;
+  }
 
-  try {
-    let query = supabase.from('users').select('*');
-    if (cleanId.includes('@')) {
-      query = query.ilike('email', cleanId);
-    } else if (digits.length >= 7) {
-      const searchDigits = digits.length >= 9 ? digits.slice(-9) : digits;
-      query = query.or(`phone.ilike.%${searchDigits}%,email.ilike.${cleanId}`);
-    } else {
-      query = query.ilike('email', cleanId);
-    }
-
-    const { data, error } = await query.limit(1);
-    if (!error && data && data.length > 0) {
-      const u = data[0];
-      return {
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        phone: u.phone,
-        passwordHash: u.password_hash,
-        role: u.role,
-        createdAt: u.created_at,
-      };
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  const searchDigits = digits.length >= 9 ? digits.slice(-9) : digits;
-  return (
-    db.users.find(
-      (u) =>
-        u.email.toLowerCase() === cleanId ||
-        (digits.length >= 7 && u.phone.replace(/[^0-9]/g, '').includes(searchDigits))
-    ) || null
-  );
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length < 7) return null;
+  const suffix = digits.length >= 9 ? digits.slice(-9) : digits;
+  const { data, error } = await getSupabaseAdmin()
+    .from('users')
+    .select('*')
+    .ilike('phone', `%${suffix}%`)
+    .limit(1)
+    .maybeSingle();
+  ensureNoError(error, 'user lookup');
+  return data ? mapUser(data) : null;
 }
 
 export async function createUser(userData: {
@@ -444,86 +269,57 @@ export async function createUser(userData: {
   passwordHash: string;
   role: Role;
 }): Promise<User> {
-  const db = readDb();
-
-  // Strict enforcement: Only one Shop Owner account can ever exist
   if (userData.role === 'owner') {
-    const existingOwner = db.users.find((u) => u.role === 'owner');
-    if (existingOwner) {
-      throw new Error('Only one Shop Owner account is permitted for Diamond Jay Enterprise.');
-    }
+    const { count, error: countError } = await getSupabaseAdmin()
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'owner');
+    ensureNoError(countError, 'owner check');
+    if ((count || 0) > 0) throw new Error('Only one Shop Owner account is permitted for Diamond Jay Enterprise.');
   }
 
   const newUser: User = {
-    id: `usr_${userData.role}_${Date.now()}`,
+    id: `usr_${userData.role}_${randomUUID()}`,
     ...userData,
     createdAt: new Date().toISOString(),
   };
-
-  try {
-    await supabase.from('users').insert({
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      phone: newUser.phone,
-      password_hash: newUser.passwordHash,
-      role: newUser.role,
-    });
-  } catch (e) {}
-
-  db.users.push(newUser);
-  writeDb(db);
-  return newUser;
+  const { data, error } = await getSupabaseAdmin().from('users').insert(userToRow(newUser)).select('*').single();
+  ensureNoError(error, 'user creation');
+  return mapUser(data);
 }
 
 export async function updateUser(
   id: string,
   updates: Partial<Omit<User, 'id' | 'createdAt'>>
 ): Promise<User | null> {
-  const db = readDb();
-  const index = db.users.findIndex((u) => u.id === id);
-  if (index === -1) return null;
-
-  // Prevent promoting any account to owner
-  if (updates.role === 'owner' && db.users[index].role !== 'owner') {
+  const current = await getUserById(id);
+  if (!current) return null;
+  if (updates.role === 'owner' && current.role !== 'owner') {
     throw new Error('Cannot assign Shop Owner role. Diamond Jay Enterprise has a single owner account.');
   }
-
-  try {
-    const sUpdates: any = {};
-    if (updates.name) sUpdates.name = updates.name;
-    if (updates.email) sUpdates.email = updates.email;
-    if (updates.phone) sUpdates.phone = updates.phone;
-    if (updates.passwordHash) sUpdates.password_hash = updates.passwordHash;
-    await supabase.from('users').update(sUpdates).eq('id', id);
-  } catch (e) {}
-
-  db.users[index] = { ...db.users[index], ...updates };
-  writeDb(db);
-  return db.users[index];
+  const row: Row = {};
+  if (updates.name !== undefined) row.name = updates.name;
+  if (updates.email !== undefined) row.email = updates.email;
+  if (updates.phone !== undefined) row.phone = updates.phone;
+  if (updates.passwordHash !== undefined) row.password_hash = updates.passwordHash;
+  if (updates.role !== undefined) row.role = updates.role;
+  const { data, error } = await getSupabaseAdmin()
+    .from('users')
+    .update(row)
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  ensureNoError(error, 'user update');
+  return data ? mapUser(data) : null;
 }
 
 export async function deleteUser(id: string): Promise<boolean> {
-  const db = readDb();
-  const target = db.users.find((u) => u.id === id);
+  const target = await getUserById(id);
   if (!target) return false;
-
-  // Prevent deleting the sole Shop Owner
-  if (target.role === 'owner') {
-    throw new Error('The primary Shop Owner account cannot be deleted.');
-  }
-
-  try {
-    await supabase.from('users').delete().eq('id', id);
-  } catch (e) {}
-
-  const initialLen = db.users.length;
-  db.users = db.users.filter((u) => u.id !== id);
-  if (db.users.length !== initialLen) {
-    writeDb(db);
-    return true;
-  }
-  return false;
+  if (target.role === 'owner') throw new Error('The primary Shop Owner account cannot be deleted.');
+  const { data, error } = await getSupabaseAdmin().from('users').delete().eq('id', id).select('id').maybeSingle();
+  ensureNoError(error, 'user deletion');
+  return Boolean(data);
 }
 
 // ---------------- ORDERS ----------------
@@ -532,140 +328,68 @@ export async function getOrders(options?: {
   status?: string;
   fulfillmentType?: string;
 }): Promise<Order[]> {
-  try {
-    let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (options?.customerId) query = query.eq('customer_id', options.customerId);
-    if (options?.status && options.status !== 'all') query = query.eq('order_status', options.status);
-    if (options?.fulfillmentType && options.fulfillmentType !== 'all') {
-      query = query.eq('fulfillment_type', options.fulfillmentType);
-    }
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      return data.map((o: any) => ({
-        id: o.id,
-        orderNumber: o.order_number,
-        customerId: o.customer_id,
-        customerName: o.customer_name,
-        customerEmail: o.customer_email,
-        customerPhone: o.customer_phone,
-        fulfillmentType: o.fulfillment_type,
-        deliveryDetails: o.delivery_details,
-        deliveryFee: Number(o.delivery_fee),
-        subtotal: Number(o.subtotal),
-        totalAmount: Number(o.total_amount),
-        paymentStatus: o.payment_status,
-        paymentMethod: o.payment_method,
-        paystackReference: o.paystack_reference,
-        paystackPaidAt: o.paystack_paid_at,
-        orderStatus: o.order_status,
-        ageConfirmed: o.age_confirmed,
-        cancellationReason: o.cancellation_reason,
-        refundedAt: o.refunded_at,
-        refundedBy: o.refunded_by,
-        items: o.items || [],
-        createdAt: o.created_at,
-        updatedAt: o.updated_at,
-      }));
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  let list = db.orders;
-
-  if (options?.customerId) {
-    list = list.filter((o) => o.customerId === options.customerId);
-  }
-
-  if (options?.status && options.status !== 'all') {
-    list = list.filter((o) => o.orderStatus === options.status);
-  }
-
+  let query = getSupabaseAdmin().from('orders').select('*').order('created_at', { ascending: false });
+  if (options?.customerId) query = query.eq('customer_id', options.customerId);
+  if (options?.status && options.status !== 'all') query = query.eq('order_status', options.status);
   if (options?.fulfillmentType && options.fulfillmentType !== 'all') {
-    list = list.filter((o) => o.fulfillmentType === options.fulfillmentType);
+    query = query.eq('fulfillment_type', options.fulfillmentType);
   }
-
-  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const { data, error } = await query;
+  ensureNoError(error, 'order lookup');
+  return (data || []).map(mapOrder);
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .or(`id.eq.${id},order_number.eq.${id}`)
-      .single();
-    if (!error && data) {
-      return {
-        id: data.id,
-        orderNumber: data.order_number,
-        customerId: data.customer_id,
-        customerName: data.customer_name,
-        customerEmail: data.customer_email,
-        customerPhone: data.customer_phone,
-        fulfillmentType: data.fulfillment_type,
-        deliveryDetails: data.delivery_details,
-        deliveryFee: Number(data.delivery_fee),
-        subtotal: Number(data.subtotal),
-        totalAmount: Number(data.total_amount),
-        paymentStatus: data.payment_status,
-        paymentMethod: data.payment_method,
-        paystackReference: data.paystack_reference,
-        paystackPaidAt: data.paystack_paid_at,
-        orderStatus: data.order_status,
-        ageConfirmed: data.age_confirmed,
-        cancellationReason: data.cancellation_reason,
-        refundedAt: data.refunded_at,
-        refundedBy: data.refunded_by,
-        items: data.items || [],
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      };
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  return db.orders.find((o) => o.id === id || o.orderNumber === id) || null;
+  const supabase = getSupabaseAdmin();
+  const { data: byId, error: idError } = await supabase.from('orders').select('*').eq('id', id).maybeSingle();
+  ensureNoError(idError, 'order lookup');
+  if (byId) return mapOrder(byId);
+  const { data: byNumber, error: numberError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('order_number', id)
+    .maybeSingle();
+  ensureNoError(numberError, 'order lookup');
+  return byNumber ? mapOrder(byNumber) : null;
 }
 
 export async function createOrder(
   orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>
 ): Promise<Order> {
-  const db = readDb();
-  const currentYear = new Date().getFullYear();
-  const orderCount = db.orders.length + 1001;
-  const orderNumber = `DJ-${currentYear}-${orderCount}`;
-
+  const now = new Date().toISOString();
   const newOrder: Order = {
     ...orderData,
-    id: `ord_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    orderNumber,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    id: `ord_${randomUUID()}`,
+    orderNumber: `DJ-${new Date().getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+    createdAt: now,
+    updatedAt: now,
   };
-
-  try {
-    await supabase.from('orders').insert({
+  const { data, error } = await getSupabaseAdmin()
+    .from('orders')
+    .insert({
       id: newOrder.id,
       order_number: newOrder.orderNumber,
-      customer_id: newOrder.customerId,
+      customer_id: newOrder.customerId || null,
       customer_name: newOrder.customerName,
       customer_email: newOrder.customerEmail,
       customer_phone: newOrder.customerPhone,
       fulfillment_type: newOrder.fulfillmentType,
-      delivery_details: newOrder.deliveryDetails,
+      delivery_details: newOrder.deliveryDetails || null,
       delivery_fee: newOrder.deliveryFee,
       subtotal: newOrder.subtotal,
       total_amount: newOrder.totalAmount,
       payment_status: newOrder.paymentStatus,
+      payment_method: newOrder.paymentMethod || null,
       order_status: newOrder.orderStatus,
       age_confirmed: newOrder.ageConfirmed,
       items: newOrder.items,
-    });
-  } catch (e) {}
-
-  db.orders.unshift(newOrder);
-  writeDb(db);
-  return newOrder;
+      created_at: now,
+      updated_at: now,
+    })
+    .select('*')
+    .single();
+  ensureNoError(error, 'order creation');
+  return mapOrder(data);
 }
 
 export async function updateOrderStatus(
@@ -673,28 +397,20 @@ export async function updateOrderStatus(
   orderStatus: Order['orderStatus'],
   cancellationReason?: string
 ): Promise<Order | null> {
-  try {
-    await supabase
-      .from('orders')
-      .update({
-        order_status: orderStatus,
-        cancellation_reason: cancellationReason || null,
-        updated_at: new Date().toISOString(),
-      })
-      .or(`id.eq.${id},order_number.eq.${id}`);
-  } catch (e) {}
-
-  const db = readDb();
-  const index = db.orders.findIndex((o) => o.id === id || o.orderNumber === id);
-  if (index === -1) return null;
-
-  db.orders[index].orderStatus = orderStatus;
-  db.orders[index].updatedAt = new Date().toISOString();
-  if (cancellationReason) {
-    db.orders[index].cancellationReason = cancellationReason;
-  }
-  writeDb(db);
-  return db.orders[index];
+  const current = await getOrderById(id);
+  if (!current) return null;
+  const { data, error } = await getSupabaseAdmin()
+    .from('orders')
+    .update({
+      order_status: orderStatus,
+      cancellation_reason: cancellationReason ?? current.cancellationReason ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', current.id)
+    .select('*')
+    .maybeSingle();
+  ensureNoError(error, 'order update');
+  return data ? mapOrder(data) : null;
 }
 
 export async function markOrderPaid(
@@ -702,208 +418,110 @@ export async function markOrderPaid(
   paystackReference: string,
   paymentMethod: Order['paymentMethod'] = 'paystack_momo'
 ): Promise<Order | null> {
-  const db = readDb();
-  const index = db.orders.findIndex(
-    (o) => o.id === idOrRef || o.orderNumber === idOrRef || o.paystackReference === idOrRef
-  );
-  if (index === -1) return null;
+  const { data, error } = await getSupabaseAdmin().rpc('mark_order_paid', {
+    p_order_id: idOrRef,
+    p_paystack_reference: paystackReference,
+    p_payment_method: paymentMethod,
+  });
+  ensureNoError(error, 'payment confirmation');
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
 
-  const order = db.orders[index];
-  if (order.paymentStatus === 'paid') {
-    return order; // Already paid idempotently
-  }
-
-  order.paymentStatus = 'paid';
-  order.orderStatus = 'confirmed';
-  order.paystackReference = paystackReference;
-  order.paymentMethod = paymentMethod;
-  order.paystackPaidAt = new Date().toISOString();
-  order.updatedAt = new Date().toISOString();
-
-  // Deduct inventory quantities safely
-  for (const item of order.items) {
-    const pIndex = db.products.findIndex((p) => p.id === item.productId);
-    if (pIndex !== -1) {
-      db.products[pIndex].stockQuantity = Math.max(0, db.products[pIndex].stockQuantity - item.quantity);
-      try {
-        supabase
-          .from('products')
-          .update({ stock_quantity: db.products[pIndex].stockQuantity })
-          .eq('id', item.productId);
-      } catch (e) {}
-    }
-  }
-
-  try {
-    await supabase
-      .from('orders')
-      .update({
-        payment_status: 'paid',
-        order_status: 'confirmed',
-        paystack_reference: paystackReference,
-        payment_method: paymentMethod,
-        paystack_paid_at: order.paystackPaidAt,
-        updated_at: order.updatedAt,
-      })
-      .eq('id', order.id);
-  } catch (e) {}
-
+  const order = mapOrder(row);
   try {
     const ownerNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0248565916';
     const link = buildWhatsAppOrderLink(order, ownerNumber);
-    if (typeof window === 'undefined') {
-      // Server-side notification is not sent via browser; we keep a link for direct use in the future.
-      console.info('WhatsApp order notification link:', link);
-    }
-  } catch (e) {
-    console.error('WhatsApp notification build failed:', e);
+    console.info('WhatsApp order notification link:', link);
+  } catch (error) {
+    console.error('WhatsApp notification build failed:', error);
   }
-
-  writeDb(db);
   return order;
 }
 
-export async function refundOrder(
-  id: string,
-  reason: string,
-  byUserId: string
-): Promise<Order | null> {
-  const db = readDb();
-  const index = db.orders.findIndex((o) => o.id === id || o.orderNumber === id);
-  if (index === -1) return null;
-
-  const order = db.orders[index];
-  order.paymentStatus = 'refunded';
-  order.orderStatus = 'cancelled';
-  order.cancellationReason = reason;
-  order.refundedAt = new Date().toISOString();
-  order.refundedBy = byUserId;
-  order.updatedAt = new Date().toISOString();
-
-  // Restock inventory
-  for (const item of order.items) {
-    const pIndex = db.products.findIndex((p) => p.id === item.productId);
-    if (pIndex !== -1) {
-      db.products[pIndex].stockQuantity += item.quantity;
-      try {
-        supabase
-          .from('products')
-          .update({ stock_quantity: db.products[pIndex].stockQuantity })
-          .eq('id', item.productId);
-      } catch (e) {}
-    }
-  }
-
-  try {
-    await supabase
-      .from('orders')
-      .update({
-        payment_status: 'refunded',
-        order_status: 'cancelled',
-        cancellation_reason: reason,
-        refunded_at: order.refundedAt,
-        refunded_by: byUserId,
-        updated_at: order.updatedAt,
-      })
-      .eq('id', order.id);
-  } catch (e) {}
-
-  writeDb(db);
-  return order;
+export async function refundOrder(id: string, reason: string, byUserId: string): Promise<Order | null> {
+  const current = await getOrderById(id);
+  if (!current) return null;
+  const { data, error } = await getSupabaseAdmin().rpc('refund_order', {
+    p_order_id: current.id,
+    p_reason: reason,
+    p_by_user_id: byUserId,
+  });
+  ensureNoError(error, 'order refund');
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? mapOrder(row) : null;
 }
 
 // ---------------- STORE SETTINGS ----------------
 export async function getStoreSettings(): Promise<StoreSettings> {
-  try {
-    const { data, error } = await supabase.from('store_settings').select('*').single();
-    if (!error && data) {
-      return {
-        storeName: data.store_name,
-        tagline: data.tagline,
-        address: data.address,
-        city: data.city,
-        country: data.country,
-        phone: data.phone,
-        whatsapp: data.whatsapp,
-        email: data.email,
-        minOrderAge: data.min_order_age,
-        businessHours: data.business_hours,
-        deliveryZones: data.delivery_zones,
-        announcementBanner: data.announcement_banner,
-        paystackPublicKey: data.paystack_public_key,
-      };
-    }
-  } catch (e) {}
-
-  const db = readDb();
-  return db.settings || SEED_STORE_SETTINGS;
+  const { data, error } = await getSupabaseAdmin()
+    .from('store_settings')
+    .select('*')
+    .eq('id', 'primary_store')
+    .maybeSingle();
+  ensureNoError(error, 'store settings lookup');
+  if (!data) throw new Error('Store settings are missing in Supabase. Run the Supabase schema/seed SQL.');
+  return mapSettings(data);
 }
 
 export async function updateStoreSettings(updates: Partial<StoreSettings>): Promise<StoreSettings> {
-  const db = readDb();
-  db.settings = { ...db.settings, ...updates };
-
-  try {
-    const sUpdates: any = {};
-    if (updates.storeName) sUpdates.store_name = updates.storeName;
-    if (updates.tagline) sUpdates.tagline = updates.tagline;
-    if (updates.address) sUpdates.address = updates.address;
-    if (updates.phone) sUpdates.phone = updates.phone;
-    if (updates.whatsapp) sUpdates.whatsapp = updates.whatsapp;
-    if (updates.email) sUpdates.email = updates.email;
-    if (updates.businessHours) sUpdates.business_hours = updates.businessHours;
-    if (updates.deliveryZones) sUpdates.delivery_zones = updates.deliveryZones;
-    if (updates.announcementBanner) sUpdates.announcement_banner = updates.announcementBanner;
-
-    await supabase.from('store_settings').update(sUpdates).eq('id', 'primary_store');
-  } catch (e) {}
-
-  writeDb(db);
-  return db.settings;
+  const current = await getStoreSettings();
+  const merged = { ...current, ...updates };
+  const { data, error } = await getSupabaseAdmin()
+    .from('store_settings')
+    .update({
+      store_name: merged.storeName,
+      tagline: merged.tagline,
+      address: merged.address,
+      city: merged.city,
+      country: merged.country,
+      phone: merged.phone,
+      whatsapp: merged.whatsapp,
+      email: merged.email,
+      min_order_age: merged.minOrderAge,
+      business_hours: merged.businessHours,
+      delivery_zones: merged.deliveryZones,
+      announcement_banner: merged.announcementBanner,
+      paystack_public_key: merged.paystackPublicKey || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 'primary_store')
+    .select('*')
+    .single();
+  ensureNoError(error, 'store settings update');
+  return mapSettings(data);
 }
 
 // ---------------- OWNER SALES ANALYTICS ----------------
 export async function getSalesAnalytics() {
-  const db = readDb();
-  const paidOrders = db.orders.filter((o) => o.paymentStatus === 'paid');
-
-  const totalRevenue = paidOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const [orders, products] = await Promise.all([getOrders(), getProducts({ onlyActive: false })]);
+  const paidOrders = orders.filter((order) => order.paymentStatus === 'paid');
+  const totalRevenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0);
   const totalOrders = paidOrders.length;
-  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const productSales = new Map<string, { name: string; quantity: number; revenue: number }>();
 
-  const productSalesMap = new Map<string, { name: string; quantity: number; revenue: number }>();
   for (const order of paidOrders) {
     for (const item of order.items) {
-      const existing = productSalesMap.get(item.productId) || {
-        name: item.productName,
-        quantity: 0,
-        revenue: 0,
-      };
-      existing.quantity += item.quantity;
-      existing.revenue += item.totalPrice;
-      productSalesMap.set(item.productId, existing);
+      const sales = productSales.get(item.productId) || { name: item.productName, quantity: 0, revenue: 0 };
+      sales.quantity += item.quantity;
+      sales.revenue += item.totalPrice;
+      productSales.set(item.productId, sales);
     }
   }
-
-  const topProducts = Array.from(productSalesMap.entries())
-    .map(([id, stats]) => ({ id, ...stats }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5);
-
-  const deliveryCount = paidOrders.filter((o) => o.fulfillmentType === 'delivery').length;
-  const pickupCount = paidOrders.filter((o) => o.fulfillmentType === 'pickup').length;
 
   return {
     totalRevenue,
     totalOrders,
-    averageOrderValue,
-    topProducts,
-    deliveryCount,
-    pickupCount,
-    allOrdersCount: db.orders.length,
-    pendingOrdersCount: db.orders.filter(
-      (o) => o.orderStatus === 'pending' || (o.paymentStatus === 'paid' && o.orderStatus === 'confirmed')
+    averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
+    topProducts: Array.from(productSales.entries())
+      .map(([id, sales]) => ({ id, ...sales }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5),
+    deliveryCount: paidOrders.filter((order) => order.fulfillmentType === 'delivery').length,
+    pickupCount: paidOrders.filter((order) => order.fulfillmentType === 'pickup').length,
+    allOrdersCount: orders.length,
+    pendingOrdersCount: orders.filter(
+      (order) => order.orderStatus === 'pending' || (order.paymentStatus === 'paid' && order.orderStatus === 'confirmed')
     ).length,
-    lowStockProducts: db.products.filter((p) => p.stockQuantity < 15),
+    lowStockProducts: products.filter((product) => product.stockQuantity < 15),
   };
 }

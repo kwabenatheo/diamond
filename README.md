@@ -37,6 +37,19 @@ Product uploads are stored in Supabase Storage rather than the app's filesystem:
 
 The upload endpoint checks that the requester is staff or owner, then uploads to the bucket using the server-only service role key. The resulting public URL is saved as the product image URL.
 
+## Supabase database source of truth
+
+The app now reads and writes products, categories, users, orders, store settings, inventory, and sales analytics directly in Supabase. It no longer silently falls back to `data/db.json`; database/configuration errors are returned instead of pretending a write succeeded.
+
+To switch an existing installation:
+
+1. In the Supabase Dashboard for the project you intend to use, open **SQL Editor** and run the updated `supabase_schema.sql`. It creates/seeds the tables, applies the private-table policies, configures the `product-images` bucket, and installs payment/refund RPC functions.
+2. Make sure `.env.local` has that same project's URL and anon key, plus a newly rotated service-role key. Never expose the service-role key to browser code.
+3. From the project root, run `npm run migrate:supabase` once. This copies `data/db.json` into Supabase (categories, users, products, orders, and settings) using the IDs already present; it can be rerun safely to update matching IDs. Keep the JSON file as a backup until you verify the records in Supabase.
+4. In Vercel, set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to credentials from that exact project, then redeploy.
+
+The service-role key is used only in server-side code and the one-time local migration script. The `users` and `orders` tables are not directly readable or writable with the public anon key.
+
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel
